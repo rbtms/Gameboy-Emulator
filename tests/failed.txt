@@ -1,0 +1,39 @@
+blargg
+-------
+
+audio folder
+OAM bug
+HALT Bug
+
+mooneye
+--------
+
+ie_push.gb
+oam_dma/sources-GS.s (Unsupported MBC5)
+ppu folder
+serial folder
+timer/tima_write_reloading.gb
+timer/tma_write_reloading.gb
+add_sp_e_timing.gb
+boot_hwio-dmgABCmgb.gb (Because P1 changes after init, but the initial value is fine)
+call_cc_timing.gb
+call_timing.gb
+di_timing-GS.gb
+halt_ime0_nointr_timing.gb
+halt_ime1_timing2-GS.gb
+jp_cc_timing.gb
+jp_timing.gb
+ld_hl_sp_e_timing.gb
+oam_dma_restart.gb
+oam_dma_start.gb
+oam_dma_timing.gb
+ret_cc_timing.gb (PPU Bugs out)
+ret_timing.gb (PPU bugs out)
+reti_timing.gb (PPU bugs out)
+emulator-only/mbc1/rom_XMb.gb (Except 4Mb for some reason.)
+emulator-only/mbc2/bigs_ramg.gb
+emulator-only/mbc2/bits_romb.gb
+emulator-only/mbc5 (unimplemented)
+
+jump roms probably fail due to a DMA timing error
+
