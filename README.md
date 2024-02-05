@@ -24,7 +24,7 @@ Pokemon|Tetris
 Please note that I have only run the tests relevant to the DMG and not other gameboy models.
 
 <table>
-<tr><th>Blargg</th>
+<tr><th>Blargg tests</th>
 <tr><td>
 
 | Test          | Passed |
@@ -40,7 +40,7 @@ Please note that I have only run the tests relevant to the DMG and not other gam
 </td></tr> </table>
 
 <table>
-<th>Mooneye</th></tr>
+<th>Mooneye tests</th></tr>
 </td><td>
 
 | Test          | Passed |
