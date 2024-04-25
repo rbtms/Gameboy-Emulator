@@ -489,7 +489,7 @@ impl PPU {
     }
 
     fn fill_linebuffer(&mut self) {
-        for i in 0..SCREEN_WIDTH {
+        for _ in 0..SCREEN_WIDTH {
             self.linebuffer.push(
                 Pixel { color_id: 0, palette: Palette::BGP }
             );

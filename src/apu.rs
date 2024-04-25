@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
 use crate::consts::*;
 
 mod channel1;
@@ -5,6 +7,7 @@ mod channel2;
 mod channel3;
 mod channel4;
 
+#[allow(dead_code)]
 pub struct APU {
     nr50 :u8, nr51 :u8, nr52 :u8,
     prev_div_bit: bool,

@@ -4,12 +4,10 @@
 
 #[cfg(test)]
 mod tests {
-    use std::cell::RefCell;
-    use std::rc::Rc;
     use gb::consts::*;
+    use gb::gbemulator::GBEmulator;
 
     type CPU = gb::cpu::CPU;
-    type RAM = gb::ram::RAM;
 
     fn read_json(path :&str) -> serde_json::Value {
         let file :String = std::fs::read_to_string(path).unwrap();
@@ -17,7 +15,7 @@ mod tests {
     }
 
     // Initialize cpu
-    fn load_json_test(json :&serde_json::Value, cpu :&mut CPU, ram :&Rc<RefCell<RAM>>) {
+    fn load_json_test(json :&serde_json::Value, cpu :&mut CPU) {
         let initial :&serde_json::Value = &json["initial"];
 
         cpu.set_pc(initial["pc"].as_u64().unwrap() as u16);
@@ -38,12 +36,12 @@ mod tests {
             let addr = addr_val[0].as_u64().unwrap() as u16;
             let val  = addr_val[1].as_u64().unwrap() as u8;
 
-            ram.borrow_mut().write(addr, val);
+            cpu.write(addr, val);
         }
     }
 
     // Check final result
-    fn check_json_test(json :&serde_json::Value, cpu :&CPU, cycle_n :u8) {
+    fn check_json_test(json :&serde_json::Value, cpu :&CPU) {
         let _final :&serde_json::Value = &json["final"];
 
         let name :&str = json["name"].as_str().unwrap();
@@ -84,7 +82,7 @@ mod tests {
             let addr = addr_val[0].as_u64().unwrap() as u16;
             let val  = addr_val[1].as_u64().unwrap() as u8;
 
-            assert_eq!(cpu.ram(addr), val, "{}: ram addr {}", name, addr);
+            assert_eq!(cpu.read(addr), val, "{}: ram addr {}", name, addr);
         }
     }
 
@@ -93,12 +91,14 @@ mod tests {
 
         for t in test_json.as_array().unwrap() {
             println!("n {}", t["name"].as_str().unwrap());
-            let ram = Rc::new(RefCell::new(RAM::new()));
+            let mut gbemu = GBEmulator::new(&path, false);
+            gbemu.init();
 
-            let mut cpu :CPU = CPU::new(ram.clone());
-            let mut cycle_n :u8 = 0;
+            let mut cpu = gbemu.get_cpu();
+            //let bus: Rc<RefCell<Bus>> = gbemu.get_bus();
+
             let final_cycle_n = t["cycles"].as_array().unwrap().len() as u8 * 4;
-            load_json_test(&t, &mut cpu, &ram);
+            load_json_test(&t, &mut cpu);
 
             // fetch the instruction
             cpu.tick();
@@ -108,14 +108,13 @@ mod tests {
             //println!("cycles: {}", final_cycle_n);
             for _ in 0..(final_cycle_n) {
                 cpu.tick();
-                cycle_n += 1;
             }
 
-            check_json_test(&t, &cpu, cycle_n);
+            check_json_test(&t, &cpu);
         }
     }
 
-    //#[test]
+    #[test]
     fn test_ops() {
         let tests = [
             "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0a", "0b", "0c", "0d", "0e", "0f",

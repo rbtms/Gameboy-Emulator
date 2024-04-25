@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+//use std::time::SystemTime;
 
 use crate::consts::*;
 use crate::cartridge::{CartridgeType, Cartridge};
@@ -37,10 +37,10 @@ pub struct MBC3 {
     reg_rtc             : u8,
     ext_selected   : SelectionExternal,
 
-    rtc_secs : u8,
-    rtc_mins : u8,
-    rtc_hour : u8,
-    rtc_day  : u8,
+    //rtc_secs : u8,
+    //rtc_mins : u8,
+    //rtc_hour : u8,
+    //rtc_day  : u8,
 }
 
 impl MBC3 {
@@ -73,10 +73,10 @@ impl MBC3 {
             enable_ext_ram      : false,
             enable_rtc          : false,
 
-            rtc_secs : 0,
-            rtc_mins : 0,
-            rtc_hour : 0,
-            rtc_day  : 0,
+            //rtc_secs : 0,
+            //rtc_mins : 0,
+            //rtc_hour : 0,
+            //rtc_day  : 0,
         }
     }
 

@@ -43,7 +43,7 @@ mod tests {
 
     pub fn load_md5(filename :&str) -> String {
         let file :String = std::fs::read_to_string("tests/blargg_expected_md5.txt").unwrap();
-        let mut lines :Vec<&str> = file.lines().into_iter().collect();
+        let lines :Vec<&str> = file.lines().into_iter().collect();
 
         for line in lines {
             println!("{} filename {}", line, filename);

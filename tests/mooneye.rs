@@ -47,10 +47,7 @@ mod tests {
         // First fetch
         //for _ in 0..4 { cpu.tick(); }
 
-        let mut counter = 0;
         while start.elapsed().unwrap().as_secs() < s_limit {
-            counter += 1;
-
             if !cpu.is_wait() && detect_ld_b_b(&cpu, &bus.borrow_mut()) {
                 if debug_mooneye_passed(&cpu) {
                     return;

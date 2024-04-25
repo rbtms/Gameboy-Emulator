@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::consts::*;
 use crate::cartridge::{CartridgeType, Cartridge};
 

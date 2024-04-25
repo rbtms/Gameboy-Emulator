@@ -24,7 +24,7 @@ const IS_DEBUG :bool = false; // Overrides --debug
 const TICKS_PER_FRAME :u32 = 69905; // 4194304 hz / 60fps/s
 
 pub struct GBEmulator {
-    path            : String,
+//    path            : String,
     cpu             : CPU,
     bus             : Rc<RefCell<Bus>>,
     joypad          : Rc<RefCell<Joypad>>,
@@ -34,7 +34,7 @@ pub struct GBEmulator {
     is_debug        : bool,
 
     screen          : Rc<RefCell<Screen>>,
-    controller      : sdl2::controller::GameController,
+//    controller      : sdl2::controller::GameController,
 
     // Input
     events :sdl2::EventPump,
@@ -45,17 +45,17 @@ impl GBEmulator {
     pub fn new(rom_path :&str, is_debug :bool) -> GBEmulator {
         let sdl_context = sdl2::init().unwrap();
         let screen = Rc::new(RefCell::new(Screen::new(&sdl_context, rom_path.to_string())));
-        let controller = sdl_context.game_controller().unwrap().open(0).unwrap();
+//        let controller = sdl_context.game_controller().unwrap().open(0).unwrap();
         let audio = sdl_context.audio().unwrap();
         let apu   = APU::new(audio);
 
-        let int    = Rc::new(RefCell::new(InterruptManager::new()));
-        let ppu    = PPU::new(screen.clone(), int.clone());
+        let int: Rc<RefCell<InterruptManager>> = Rc::new(RefCell::new(InterruptManager::new()));
+        let ppu = PPU::new(screen.clone(), int.clone());
         let joypad = Rc::new(RefCell::new(Joypad::new(int.clone())));
-        let bus    = Rc::new(RefCell::new(Bus::new(ppu, apu, int.clone(), joypad.clone(), rom_path)));
+        let bus  = Rc::new(RefCell::new(Bus::new(ppu, apu, int.clone(), joypad.clone(), rom_path)));
 
         return GBEmulator {
-            path            : rom_path.to_string(),
+//            path            : rom_path.to_string(),
             cpu             : CPU::new(bus.clone(), int.clone()),
             bus             : bus.clone(),
             joypad          : joypad.clone(),
@@ -66,7 +66,7 @@ impl GBEmulator {
             events: sdl_context.event_pump().unwrap(),
             screen: screen.clone(),
 
-            controller,
+//            controller,
 
             is_quit: false,
         }
@@ -127,7 +127,7 @@ impl GBEmulator {
 
     pub fn event_loop(&mut self) {
         // Using self methods inside the match gives a borrow error
-        let mut is_save_screen = false;
+        //let mut is_save_screen = false;
 
         for event in self.events.poll_iter() {
             match event {
@@ -180,13 +180,13 @@ impl GBEmulator {
                         sdl2::controller::Axis::LeftX =>  {
                             if      value < -16000 { self.joypad.borrow_mut().controller_left(); }
                             else if value >  16000 { self.joypad.borrow_mut().controller_right(); }
-                            else { self.joypad.borrow_mut().controller_noX(); }
+                            else { self.joypad.borrow_mut().controller_no_x(); }
                         },
                         // Up: Negative (0..-32000), Down: The opposite
                         sdl2::controller::Axis::LeftY => {
                             if      value < -16000 { self.joypad.borrow_mut().controller_up(); }
                             else if value >  16000 { self.joypad.borrow_mut().controller_down(); }
-                            else { self.joypad.borrow_mut().controller_noY(); }
+                            else { self.joypad.borrow_mut().controller_no_y(); }
 
                         },
                         _ => {}

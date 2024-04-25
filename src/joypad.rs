@@ -114,12 +114,12 @@ impl Joypad {
         }
     }
 
-    pub fn controller_noX(&mut self) {
+    pub fn controller_no_x(&mut self) {
         if self.is_controller_left { self.release_left(); self.is_controller_left = false; }
         if self.is_controller_right { self.release_right(); self.is_controller_right = false; }
     }
 
-    pub fn controller_noY(&mut self) {
+    pub fn controller_no_y(&mut self) {
         if self.is_controller_up { self.release_up(); self.is_controller_up = false; }
         if self.is_controller_down { self.release_down(); self.is_controller_down = false; }
     }

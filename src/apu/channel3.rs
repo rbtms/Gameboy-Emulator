@@ -1,5 +1,7 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
+#![allow(unused_imports)]
 use sdl2::audio::{AudioCallback, AudioSpecDesired};
-
 use crate::consts::*;
 
 struct Wave {
