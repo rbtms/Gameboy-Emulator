@@ -74,6 +74,8 @@ impl GBEmulator {
 
     pub fn get_cpu(&mut self) -> &mut CPU { return &mut self.cpu; }
     pub fn get_bus(&self) -> Rc<RefCell<Bus>> { return self.bus.clone(); }
+    pub fn get_screen(&self) -> Rc<RefCell<Screen>> { return self.screen.clone(); }
+    pub fn is_quit(&self) -> bool { return self.is_quit; }
 
     pub fn init(&mut self) {
         self.cpu.init();
@@ -103,18 +105,7 @@ impl GBEmulator {
 
         // Main loop
         while !self.is_quit {
-            // Time adjustment for 4.19MHz / 60 fps
-            self.clock.wait_next_frame(); 
-            self.clock.update_fps(&mut self.screen.borrow_mut());
-
-            for _ in 0..TICKS_PER_FRAME {
-                self.try_update_debugger();
-                self.bus.borrow_mut().tick();
-                self.cpu.tick();
-            }
-
-            // Process input
-            self.event_loop();
+            self.run_frame();
         }
 
         // TODO: Reenable
@@ -125,10 +116,22 @@ impl GBEmulator {
         }
     }
 
-    pub fn event_loop(&mut self) {
-        // Using self methods inside the match gives a borrow error
-        //let mut is_save_screen = false;
+    pub fn run_frame(&mut self) {
+        // Time adjustment for 4.19MHz / 60 fps
+        self.clock.wait_next_frame(); 
+        self.clock.update_fps(&mut self.screen.borrow_mut());
 
+        for _ in 0..TICKS_PER_FRAME {
+            self.try_update_debugger();
+            self.bus.borrow_mut().tick();
+            self.cpu.tick();
+        }
+
+        // Process input
+        self.event_loop();
+    }
+
+    pub fn event_loop(&mut self) {
         for event in self.events.poll_iter() {
             match event {
                 Event::Quit {..} |
@@ -137,9 +140,6 @@ impl GBEmulator {
                 Event::KeyDown { keycode: Some(Keycode::R), .. } => {
                     //self.handle_reload()
                 },
-                /*Event::KeyDown { keycode: Some(Keycode::S), .. } => {
-                    is_save_screen = true;
-                },*/
                 Event::KeyDown { keycode: Some(Keycode::F), .. } => self.joypad.borrow_mut().press_start(),
                 Event::KeyUp   { keycode: Some(Keycode::F), .. } => self.joypad.borrow_mut().release_start(),
                 Event::KeyDown { keycode: Some(Keycode::G), .. } => self.joypad.borrow_mut().press_select(),
@@ -195,27 +195,6 @@ impl GBEmulator {
                 _ => {}
             }
         }
-    }
-    
-    /*
-     * Tests
-     */
-    pub fn get_screen(&self) -> Rc<RefCell<Screen>> {
-        return self.screen.clone();
-    }
-
-    pub fn save_screen_crc(&self) {
-        //let rom_file :&str = self.path.split("/").into_iter().last().unwrap();
-
-        //let pixels = self.screen.borrow().get_pixels(); 
-        //let digest = md5::compute(&pixels);
-
-        //let file :String = std::fs::read_to_string("expected_md5.txt").unwrap();
-        //let mut lines :Vec<&str> = file.lines().into_iter().collect();
-        //let line = format!("{}:{:x}", rom_file, digest);
-        //lines.push(&line);
-
-        //std::fs::write("expected_md5.txt", lines.join("\n")).unwrap();
     }
 }
 

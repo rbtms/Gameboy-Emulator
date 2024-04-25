@@ -91,11 +91,11 @@ mod tests {
 
         for t in test_json.as_array().unwrap() {
             println!("n {}", t["name"].as_str().unwrap());
+            
             let mut gbemu = GBEmulator::new(&path, false);
             gbemu.init();
 
             let mut cpu = gbemu.get_cpu();
-            //let bus: Rc<RefCell<Bus>> = gbemu.get_bus();
 
             let final_cycle_n = t["cycles"].as_array().unwrap().len() as u8 * 4;
             load_json_test(&t, &mut cpu);

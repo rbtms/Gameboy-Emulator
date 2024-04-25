@@ -294,20 +294,20 @@ impl CPU {
             0x7d => self.ld_r_r(REG_A, REG_L),          // A <- L
             0x7f => self.ld_r_r(REG_A, REG_A),          // A <- A
 
-            0x70 => self.ld_hl_r(REG_B),                // (HL) <- B
-            0x71 => self.ld_hl_r(REG_C),                // (HL) <- C
-            0x72 => self.ld_hl_r(REG_D),                // (HL) <- D
-            0x73 => self.ld_hl_r(REG_E),                // (HL) <- E
-            0x74 => self.ld_hl_r(REG_H),                // (HL) <- H
-            0x75 => self.ld_hl_r(REG_L),                // (HL) <- L
+            0x70 => self.ld_hl_r(REG_B),                             // (HL) <- B
+            0x71 => self.ld_hl_r(REG_C),                             // (HL) <- C
+            0x72 => self.ld_hl_r(REG_D),                             // (HL) <- D
+            0x73 => self.ld_hl_r(REG_E),                             // (HL) <- E
+            0x74 => self.ld_hl_r(REG_H),                             // (HL) <- H
+            0x75 => self.ld_hl_r(REG_L),                             // (HL) <- L
 
-            0x06 => self.ld_r_n(REG_B),                 // B <- n
-            0x0e => self.ld_r_n(REG_C),                 // C <- n
-            0x16 => self.ld_r_n(REG_D),                 // D <- n
-            0x1e => self.ld_r_n(REG_E),                 // E <- n
-            0x26 => self.ld_r_n(REG_H),                 // H <- n
-            0x2e => self.ld_r_n(REG_L),                 // L <- n
-            0x3e => self.ld_r_n(REG_A),                 // A <- n
+            0x06 => self.ld_r_n(REG_B),                              // B <- n
+            0x0e => self.ld_r_n(REG_C),                              // C <- n
+            0x16 => self.ld_r_n(REG_D),                              // D <- n
+            0x1e => self.ld_r_n(REG_E),                              // E <- n
+            0x26 => self.ld_r_n(REG_H),                              // H <- n
+            0x2e => self.ld_r_n(REG_L),                              // L <- n
+            0x3e => self.ld_r_n(REG_A),                              // A <- n
 
             0x0a => self.ld_r_rr(REG_A, REG_B, REG_C),  // A <- (BC)
             0x1a => self.ld_r_rr(REG_A, REG_D, REG_E),  // A <- (DE)
@@ -327,179 +327,179 @@ impl CPU {
             0x11 => self.ld_rr_nn(REG_D, REG_E),        // DE <- nn
             0x21 => self.ld_rr_nn(REG_H, REG_L),        // HL <- nn
 
-            0x36 => self.ld_hl_n(),                     // (HL) <- n
+            0x36 => self.ld_hl_n(),                                // (HL) <- n
+                
+            0xfa => self.ld_a_nn(),                                // A <- (nn)
+            0xea => self.ld_nn_a(),                                // (nn) <- A
+                
+            0x08 => self.ld_nn_sp(),                               // nn <- sp
+            0x31 => self.ld_sp_nn(),                               // SP <- nn
+                
+            0xf9 => self.ld_sp_hl(),                               // SP <- HL
+                
+            0x22 => self.ldi_hl_a(),                               // (HL++) <- A
+            0x2a => self.ldi_a_hl(),                               // A <- (HL++)
+                
+            0x32 => self.ldd_hl_a(),                               // (HL) <- A, HL--
+            0x3a => self.ldd_a_hl(),                               // A <- (HL), HL--
+                
+            0xe0 => self.ldh_n_a(),                                // write A to io-port 0xFF00 + n
+            0xf0 => self.ldh_a_n(),                                // read from io-port 0xFF00 + n to A
+            0xf2 => self.ldh_a_c(),                                // read from io-port 0xFF00 + C to A
+            0xe2 => self.ldh_c_a(),                                // write A to io-port 0xFF00 + C
+                
+            0xf8 => self.ldhl_sp_n(),                              // HL = SP + n
 
-            0xfa => self.ld_a_nn(),                     // A <- (nn)
-            0xea => self.ld_nn_a(),                     // (nn) <- A
-
-            0x08 => self.ld_nn_sp(),                    // nn <- sp
-            0x31 => self.ld_sp_nn(),                    // SP <- nn
-
-            0xf9 => self.ld_sp_hl(),                    // SP <- HL
-
-            0x22 => self.ldi_hl_a(),                    // (HL++) <- A
-            0x2a => self.ldi_a_hl(),                    // A <- (HL++)
-
-            0x32 => self.ldd_hl_a(),                    // (HL) <- A, HL--
-            0x3a => self.ldd_a_hl(),                    // A <- (HL), HL--
-
-            0xe0 => self.ldh_n_a(),                     // write A to io-port 0xFF00 + n
-            0xf0 => self.ldh_a_n(),                     // read from io-port 0xFF00 + n to A
-            0xf2 => self.ldh_a_c(),                     // read from io-port 0xFF00 + C to A
-            0xe2 => self.ldh_c_a(),                     // write A to io-port 0xFF00 + C
-
-            0xf8 => self.ldhl_sp_n(),                   // HL = SP + n
-
-            /* inc */
-            0x04 => self.inc_r(REG_B),                  // B++, set flags
-            0x0c => self.inc_r(REG_C),                  // C++, set flags
-            0x14 => self.inc_r(REG_D),                  // D++, set flags
-            0x1c => self.inc_r(REG_E),                  // E++, set flags
-            0x24 => self.inc_r(REG_H),                  // H++, set flags
-            0x2c => self.inc_r(REG_L),                  // L++, set flags
-            0x3c => self.inc_r(REG_A),                  // A++, set flags
-
+            /* inc */      
+            0x04 => self.inc_r(REG_B),                             // B++, set flags
+            0x0c => self.inc_r(REG_C),                             // C++, set flags
+            0x14 => self.inc_r(REG_D),                             // D++, set flags
+            0x1c => self.inc_r(REG_E),                             // E++, set flags
+            0x24 => self.inc_r(REG_H),                             // H++, set flags
+            0x2c => self.inc_r(REG_L),                             // L++, set flags
+            0x3c => self.inc_r(REG_A),                             // A++, set flags
+            
             0x03 => self.inc_rr(REG_B, REG_C),          // BC++
             0x13 => self.inc_rr(REG_D, REG_E),          // DE++
             0x23 => self.inc_rr(REG_H, REG_L),          // HL++
-
-            0x33 => self.inc_sp(),                      // SP++
-            0x34 => self.inc_hl(),                      // (HL)++
+            
+            0x33 => self.inc_sp(),                                 // SP++
+            0x34 => self.inc_hl(),                                 // (HL)++
 
             /* dec */
-            0x05 => self.dec_r(REG_B),                  // B--, set flags
-            0x0d => self.dec_r(REG_C),                  // C--, set flags
-            0x15 => self.dec_r(REG_D),                  // D--, set flags
-            0x1d => self.dec_r(REG_E),                  // E--, set flags
-            0x25 => self.dec_r(REG_H),                  // H--, set flags
-            0x2d => self.dec_r(REG_L),                  // L--, set flags
-            0x3d => self.dec_r(REG_A),                  // A--, set flags
+            0x05 => self.dec_r(REG_B),                             // B--, set flags
+            0x0d => self.dec_r(REG_C),                             // C--, set flags
+            0x15 => self.dec_r(REG_D),                             // D--, set flags
+            0x1d => self.dec_r(REG_E),                             // E--, set flags
+            0x25 => self.dec_r(REG_H),                             // H--, set flags
+            0x2d => self.dec_r(REG_L),                             // L--, set flags
+            0x3d => self.dec_r(REG_A),                             // A--, set flags
 
             0x0b => self.dec_rr(REG_B, REG_C),          // BC--
             0x1b => self.dec_rr(REG_D, REG_E),          // DE--
             0x2b => self.dec_rr(REG_H, REG_L),          // HL--
 
-            0x35 => self.dec_hl(),                      // (HL)--
-
-            0x3b => self.dec_sp(),                      // SP--
-
-            /* add */
-            0x80 => self.add_a_r(REG_B),                // A += B
-            0x81 => self.add_a_r(REG_C),                // A += C
-            0x82 => self.add_a_r(REG_D),                // A += D
-            0x83 => self.add_a_r(REG_E),                // A += E
-            0x84 => self.add_a_r(REG_H),                // A += H
-            0x85 => self.add_a_r(REG_L),                // A += L
-            0x87 => self.add_a_r(REG_A),                // A += A 
-            0x86 => self.add_a_hl(),                    // A += (HL)
-            0xc6 => self.add_a_n(),                     // A += n
+            0x35 => self.dec_hl(),                                 // (HL)--
+                
+            0x3b => self.dec_sp(),                                 // SP--
+                
+            /* add */             
+            0x80 => self.add_a_r(REG_B),                           // A += B
+            0x81 => self.add_a_r(REG_C),                           // A += C
+            0x82 => self.add_a_r(REG_D),                           // A += D
+            0x83 => self.add_a_r(REG_E),                           // A += E
+            0x84 => self.add_a_r(REG_H),                           // A += H
+            0x85 => self.add_a_r(REG_L),                           // A += L
+            0x87 => self.add_a_r(REG_A),                           // A += A 
+            0x86 => self.add_a_hl(),                               // A += (HL)
+            0xc6 => self.add_a_n(),                                // A += n
             0x09 => self.add_hl_rr(REG_B, REG_C),       // HL += BC
             0x19 => self.add_hl_rr(REG_D, REG_E),       // HL += DE
             0x29 => self.add_hl_rr(REG_H, REG_L),       // HL += HL
-            0x39 => self.add_hl_sp(),                   // HL += SP
-            0xe8 => self.add_sp_n(),                    // SP += n
+            0x39 => self.add_hl_sp(),                              // HL += SP
+            0xe8 => self.add_sp_n(),                               // SP += n
 
-            0x88 => self.adc_a_r(REG_B),                // A += B with carry, set flags
-            0x89 => self.adc_a_r(REG_C),                // A += C with carry, set flags
-            0x8a => self.adc_a_r(REG_D),                // A += D with carry, set flags
-            0x8b => self.adc_a_r(REG_E),                // A += E with carry, set flags
-            0x8c => self.adc_a_r(REG_H),                // A += H with carry, set flags
-            0x8d => self.adc_a_r(REG_L),                // A += L with carry, set flags
-            0x8f => self.adc_a_r(REG_A),                // A += A with carry, set flags
-            0x8e => self.adc_a_hl(),                    // A += (HL) with carry, set flags
-            0xce => self.adc_a_n(),                     // A += n with carry, set flags
-
-            /* sub */
-            0x90 => self.sub_a_r(REG_B),                // A -= B, set flags
-            0x91 => self.sub_a_r(REG_C),                // A -= C, set flags
-            0x92 => self.sub_a_r(REG_D),                // A -= D, set flags
-            0x93 => self.sub_a_r(REG_E),                // A -= E, set flags
-            0x94 => self.sub_a_r(REG_H),                // A -= H, set flags
-            0x95 => self.sub_a_r(REG_L),                // A -= L, set flags
-            0x97 => self.sub_a_r(REG_A),                // A -= A, set flags
-            0x96 => self.sub_a_hl(),                    // A -= (HL), set flags
-            0xd6 => self.sub_a_n(),                     // A -= n
-
-            0x98 => self.sbc_a_r(REG_B),                // A -= B - c, set flags
-            0x99 => self.sbc_a_r(REG_C),                // A -= C - c, set flags
-            0x9a => self.sbc_a_r(REG_D),                // A -= D - c, set flags
-            0x9b => self.sbc_a_r(REG_E),                // A -= E - c, set flags
-            0x9c => self.sbc_a_r(REG_H),                // A -= H - c, set flags
-            0x9d => self.sbc_a_r(REG_L),                // A -= L - c, set flags
-            0x9f => self.sbc_a_r(REG_A),                // A -= A - c, set flags
-            0x9e => self.sbc_a_hl(),                    // A -= (HL) - c, set flags
-            0xde => self.sbc_a_n(),                     // A <- (n)
-
-            /* rot left */
-            0x07 => self.rlca(),                        // rot A left, set flags
-            0x17 => self.rla(),                         // rot A left with carry, set flags
-
-            /* rot right */
-            0x0f => self.rrca(),                        // rot A right, set flags
-            0x1f => self.rra(),                         // rot A right with carry, set flags
-
-            /* stop */
-            0x10 => self.stop(),                        // STOP: Halt CPU and LCD display until button pressed
-
+            0x88 => self.adc_a_r(REG_B),                           // A += B with carry, set flags
+            0x89 => self.adc_a_r(REG_C),                           // A += C with carry, set flags
+            0x8a => self.adc_a_r(REG_D),                           // A += D with carry, set flags
+            0x8b => self.adc_a_r(REG_E),                           // A += E with carry, set flags
+            0x8c => self.adc_a_r(REG_H),                           // A += H with carry, set flags
+            0x8d => self.adc_a_r(REG_L),                           // A += L with carry, set flags
+            0x8f => self.adc_a_r(REG_A),                           // A += A with carry, set flags
+            0x8e => self.adc_a_hl(),                               // A += (HL) with carry, set flags
+            0xce => self.adc_a_n(),                                // A += n with carry, set flags
+                
+            /* sub */          
+            0x90 => self.sub_a_r(REG_B),                           // A -= B, set flags
+            0x91 => self.sub_a_r(REG_C),                           // A -= C, set flags
+            0x92 => self.sub_a_r(REG_D),                           // A -= D, set flags
+            0x93 => self.sub_a_r(REG_E),                           // A -= E, set flags
+            0x94 => self.sub_a_r(REG_H),                           // A -= H, set flags
+            0x95 => self.sub_a_r(REG_L),                           // A -= L, set flags
+            0x97 => self.sub_a_r(REG_A),                           // A -= A, set flags
+            0x96 => self.sub_a_hl(),                               // A -= (HL), set flags
+            0xd6 => self.sub_a_n(),                                // A -= n
+                
+            0x98 => self.sbc_a_r(REG_B),                           // A -= B - c, set flags
+            0x99 => self.sbc_a_r(REG_C),                           // A -= C - c, set flags
+            0x9a => self.sbc_a_r(REG_D),                           // A -= D - c, set flags
+            0x9b => self.sbc_a_r(REG_E),                           // A -= E - c, set flags
+            0x9c => self.sbc_a_r(REG_H),                           // A -= H - c, set flags
+            0x9d => self.sbc_a_r(REG_L),                           // A -= L - c, set flags
+            0x9f => self.sbc_a_r(REG_A),                           // A -= A - c, set flags
+            0x9e => self.sbc_a_hl(),                               // A -= (HL) - c, set flags
+            0xde => self.sbc_a_n(),                                // A <- (n)
+                
+            /* rot left */         
+            0x07 => self.rlca(),                                   // rot A left, set flags
+            0x17 => self.rla(),                                    // rot A left with carry, set flags
+                
+            /* rot right */        
+            0x0f => self.rrca(),                                   // rot A right, set flags
+            0x1f => self.rra(),                                    // rot A right with carry, set flags
+                
+            /* stop */         
+            0x10 => self.stop(),                                   // STOP: Halt CPU and LCD display until button pressed
+                
             /* daa */
-            0x27 => self.daa(),                         // adjust A to BCD
-
-            /* cpl */
-            0x2f => self.cpl(),                         // complement of A
-
-            /* scf */
-            0x37 => self.scf(),                         // set carry flag
-
-            /* ccf */
-            0x3f => self.ccf(),                         // carry flag complement
-
-            /* halt */
-            0x76 => self.halt(),                        // HALT: Power down the CPU until an interrupt occurs
-
-            /* and */
-            0xa0 => self.and_a_r(REG_B),                // A &= B, set flags
-            0xa1 => self.and_a_r(REG_C),                // A &= C, set flags
-            0xa2 => self.and_a_r(REG_D),                // A &= D, set flags
-            0xa3 => self.and_a_r(REG_E),                // A &= E, set flags
-            0xa4 => self.and_a_r(REG_H),                // A &= H, set flags
-            0xa5 => self.and_a_r(REG_L),                // A &= L, set flags
-            0xa7 => self.and_a_r(REG_A),                // A &= A, set flags
-            0xa6 => self.and_a_hl(),                    // A &= (HL), set flags
-            0xe6 => self.and_a_n(),                     // A &= n
-
-            /* xor */
-            0xa8 => self.xor_a_r(REG_B),                // A ^= B, set flags
-            0xa9 => self.xor_a_r(REG_C),                // A ^= C, set flags
-            0xaa => self.xor_a_r(REG_D),                // A ^= D, set flags
-            0xab => self.xor_a_r(REG_E),                // A ^= E, set flags
-            0xac => self.xor_a_r(REG_H),                // A ^= H, set flags
-            0xad => self.xor_a_r(REG_L),                // A ^= L, set flags
-            0xaf => self.xor_a_r(REG_A),                // A ^= A, set flags
-            0xae => self.xor_a_hl(),                    // A ^= (HL), set flags
-            0xee => self.xor_a_n(),                     // A ^= n
+            0x27 => self.daa(),                                    // adjust A to BCD
+                
+            /* cpl */          
+            0x2f => self.cpl(),                                    // complement of A
+                
+            /* scf */          
+            0x37 => self.scf(),                                    // set carry flag
+                
+            /* ccf */          
+            0x3f => self.ccf(),                                    // carry flag complement
+                
+            /* halt */         
+            0x76 => self.halt(),                                   // HALT: Power down the CPU until an interrupt occurs
+                
+            /* and */          
+            0xa0 => self.and_a_r(REG_B),                           // A &= B, set flags
+            0xa1 => self.and_a_r(REG_C),                           // A &= C, set flags
+            0xa2 => self.and_a_r(REG_D),                           // A &= D, set flags
+            0xa3 => self.and_a_r(REG_E),                           // A &= E, set flags
+            0xa4 => self.and_a_r(REG_H),                           // A &= H, set flags
+            0xa5 => self.and_a_r(REG_L),                           // A &= L, set flags
+            0xa7 => self.and_a_r(REG_A),                           // A &= A, set flags
+            0xa6 => self.and_a_hl(),                               // A &= (HL), set flags
+            0xe6 => self.and_a_n(),                                // A &= n
+                
+            /* xor */          
+            0xa8 => self.xor_a_r(REG_B),                           // A ^= B, set flags
+            0xa9 => self.xor_a_r(REG_C),                           // A ^= C, set flags
+            0xaa => self.xor_a_r(REG_D),                           // A ^= D, set flags
+            0xab => self.xor_a_r(REG_E),                           // A ^= E, set flags
+            0xac => self.xor_a_r(REG_H),                           // A ^= H, set flags
+            0xad => self.xor_a_r(REG_L),                           // A ^= L, set flags
+            0xaf => self.xor_a_r(REG_A),                           // A ^= A, set flags
+            0xae => self.xor_a_hl(),                               // A ^= (HL), set flags
+            0xee => self.xor_a_n(),                                // A ^= n
 
             /* or */
-            0xb0 => self.or_a_r(REG_B),                 // A |= B, set flags
-            0xb1 => self.or_a_r(REG_C),                 // A |= C, set flags
-            0xb2 => self.or_a_r(REG_D),                 // A |= D, set flags
-            0xb3 => self.or_a_r(REG_E),                 // A |= E, set flags
-            0xb4 => self.or_a_r(REG_H),                 // A |= H, set flags
-            0xb5 => self.or_a_r(REG_L),                 // A |= L, set flags
-            0xb7 => self.or_a_r(REG_A),                 // A |= A, set flags
-            0xb6 => self.or_a_hl(),                     // A |= (HL), set flags
-            0xf6 => self.or_a_n(),                      // A |= n
-
-            /* cp */
-            0xb8 => self.cp_a_r(REG_B),                 // comp A B, set flags
-            0xb9 => self.cp_a_r(REG_C),                 // comp A C, set flags
-            0xba => self.cp_a_r(REG_D),                 // comp A D, set flags
-            0xbb => self.cp_a_r(REG_E),                 // comp A E, set flags
-            0xbc => self.cp_a_r(REG_H),                 // comp A H, set flags
-            0xbd => self.cp_a_r(REG_L),                 // comp A L, set flags
-            0xbf => self.cp_a_r(REG_A),                 // comp A A, set flags
-            0xbe => self.cp_a_hl(),                     // comp A (HL), set flags
-            0xfe => self.cp_a_n(),                      // comp A n
-
+            0xb0 => self.or_a_r(REG_B),                            // A |= B, set flags
+            0xb1 => self.or_a_r(REG_C),                            // A |= C, set flags
+            0xb2 => self.or_a_r(REG_D),                            // A |= D, set flags
+            0xb3 => self.or_a_r(REG_E),                            // A |= E, set flags
+            0xb4 => self.or_a_r(REG_H),                            // A |= H, set flags
+            0xb5 => self.or_a_r(REG_L),                            // A |= L, set flags
+            0xb7 => self.or_a_r(REG_A),                            // A |= A, set flags
+            0xb6 => self.or_a_hl(),                                // A |= (HL), set flags
+            0xf6 => self.or_a_n(),                                 // A |= n
+                
+            /* cp */           
+            0xb8 => self.cp_a_r(REG_B),                            // comp A B, set flags
+            0xb9 => self.cp_a_r(REG_C),                            // comp A C, set flags
+            0xba => self.cp_a_r(REG_D),                            // comp A D, set flags
+            0xbb => self.cp_a_r(REG_E),                            // comp A E, set flags
+            0xbc => self.cp_a_r(REG_H),                            // comp A H, set flags
+            0xbd => self.cp_a_r(REG_L),                            // comp A L, set flags
+            0xbf => self.cp_a_r(REG_A),                            // comp A A, set flags
+            0xbe => self.cp_a_hl(),                                // comp A (HL), set flags
+            0xfe => self.cp_a_n(),                                 // comp A n
+                
             /* push */
             0xc5 => self.push_rr(REG_B, REG_C),         // push BC
             0xd5 => self.push_rr(REG_D, REG_E),         // push DE
@@ -513,35 +513,36 @@ impl CPU {
             0xf1 => self.pop_rr(REG_A, REG_F),          // AF <- pop()
 
             /* jp */
-            0xc2 => self.jp_cc_nn(JmpCond::NZ),         // jmp nn if z == 1
-            0xca => self.jp_cc_nn(JmpCond::Z),          // jmp nn if z == 0
-            0xd2 => self.jp_cc_nn(JmpCond::NC),         // jmp nn if c == 1
-            0xda => self.jp_cc_nn(JmpCond::C),          // jmp nn if c == 0
-            0xc3 => self.jp_nn(),                       // jmp nn 
-            0xe9 => self.jp_hl(),                       // jmp HL
+            0xc2 => self.jp_cc_nn(JmpCond::NZ),              // jmp nn if z == 1
+            0xca => self.jp_cc_nn(JmpCond::Z),               // jmp nn if z == 0
+            0xd2 => self.jp_cc_nn(JmpCond::NC),              // jmp nn if c == 1
+            0xda => self.jp_cc_nn(JmpCond::C),               // jmp nn if c == 0
+            
+            0xc3 => self.jp_nn(),                                 // jmp nn 
+            0xe9 => self.jp_hl(),                                 // jmp HL
 
             /* jr */
-            0x18 => self.jr(),                          // PC += n
-            0x20 => self.jr_cc_n(JmpCond::NZ),          // PC += n if z == 1
-            0x28 => self.jr_cc_n(JmpCond::Z),           // pc += n if z == 0
-            0x30 => self.jr_cc_n(JmpCond::NC),          // PC += n if c == 1
-            0x38 => self.jr_cc_n(JmpCond::C),           // PC += n if c == 0
+            0x18 => self.jr(),                                     // PC += n
+            0x20 => self.jr_cc_n(JmpCond::NZ),               // PC += n if z == 1
+            0x28 => self.jr_cc_n(JmpCond::Z),                // pc += n if z == 0
+            0x30 => self.jr_cc_n(JmpCond::NC),               // PC += n if c == 1
+            0x38 => self.jr_cc_n(JmpCond::C),                // PC += n if c == 0
 
-            /* call */
-            0xc4 => self.call_cc_nn(JmpCond::NZ),       // call nn if z == 1
-            0xcc => self.call_cc_nn(JmpCond::Z),        // call nn if z == 0
-            0xd4 => self.call_cc_nn(JmpCond::NC),       // call nn if c == 1
-            0xdc => self.call_cc_nn(JmpCond::C),        // jmp  nn if c == 0
-            0xcd => self.call_nn(),                     // call nn
+            /* call */      
+            0xc4 => self.call_cc_nn(JmpCond::NZ),            // call nn if z == 1
+            0xcc => self.call_cc_nn(JmpCond::Z),             // call nn if z == 0
+            0xd4 => self.call_cc_nn(JmpCond::NC),            // call nn if c == 1
+            0xdc => self.call_cc_nn(JmpCond::C),             // jmp  nn if c == 0
+            0xcd => self.call_nn(),                                // call nn
 
             /* ret */
-            0xc9 => self.ret(),                         // return to addr in top of stack
-            0xd9 => self.reti(),                        // ret, enable interrupts
+            0xc9 => self.ret(),                                    // return to addr in top of stack
+            0xd9 => self.reti(),                                   // ret, enable interrupts
 
-            0xc0 => self.ret_cc(JmpCond::NZ),          // ret if z == 1
-            0xc8 => self.ret_cc(JmpCond::Z),           // ret if z == 0
-            0xd0 => self.ret_cc(JmpCond::NC),          // ret if c == 1
-            0xd8 => self.ret_cc(JmpCond::C),           // ret if c == 0
+            0xc0 => self.ret_cc(JmpCond::NZ),               // ret if z == 1
+            0xc8 => self.ret_cc(JmpCond::Z),                // ret if z == 0
+            0xd0 => self.ret_cc(JmpCond::NC),               // ret if c == 1
+            0xd8 => self.ret_cc(JmpCond::C),                // ret if c == 0
 
             /* CB-prefixed opcodes */
             0xcb => {
@@ -778,4 +779,3 @@ impl CPU {
         }
     }
 }
-

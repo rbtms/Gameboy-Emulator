@@ -3,9 +3,32 @@ mod tests {
     use std::time::SystemTime;
     use gb::gbemulator::GBEmulator;
 
-    pub fn _test_rom(file :&str) {
-        let path = "roms/gb-test-roms-master";
-        let path = format!("{}/{}", path, file);
+    const ROMS_FOLDER :&str = "tests/roms/blargg";
+
+    pub fn load_md5(filename :&str) -> String {
+        let file :String = std::fs::read_to_string("tests/blargg_expected_md5.txt").unwrap();
+        let lines :Vec<&str> = file.lines().into_iter().collect();
+
+        for line in lines {
+            println!("{} filename {}", line, filename);
+            if line.contains(&filename) {
+                return line.split(":").into_iter().last().unwrap().to_string();
+            }
+        }
+
+        panic!();
+    }
+
+    pub fn hash_matches(pixels :&Vec<u8>, hash :&String) -> bool {
+        return format!("{:x}", md5::compute(&pixels)) == *hash;
+    }
+
+    /*
+     Tests ROMs such that the result is compared with a specific register.
+     It's better not to use since it gives problems with some memory tests.
+     */
+    pub fn test_rom_with_register(file :&str) {
+        let path = format!("{}/{}", ROMS_FOLDER, file);
 
         let mut gbemu = GBEmulator::new(&path, false);
         gbemu.init();
@@ -13,14 +36,14 @@ mod tests {
         let bus = gbemu.get_bus();
         let cpu = gbemu.get_cpu();
 
-        let s_limit = 10; // 10s
+        let timeout_s = 10;
         let start = SystemTime::now();
 
         // First fetch
         //for _ in 0..4 { cpu.tick(); }
 
         let mut output :String = String::new();
-        while start.elapsed().unwrap().as_secs() < s_limit {
+        while start.elapsed().unwrap().as_secs() < timeout_s {
             cpu.tick();
             bus.borrow_mut().tick();
 
@@ -41,27 +64,9 @@ mod tests {
         assert!(false, "Timeout");
     }
 
-    pub fn load_md5(filename :&str) -> String {
-        let file :String = std::fs::read_to_string("tests/blargg_expected_md5.txt").unwrap();
-        let lines :Vec<&str> = file.lines().into_iter().collect();
-
-        for line in lines {
-            println!("{} filename {}", line, filename);
-            if line.contains(&filename) {
-                return line.split(":").into_iter().last().unwrap().to_string();
-            }
-        }
-
-        panic!();
-    }
-
-    pub fn hash_matches(pixels :&Vec<u8>, hash :&String) -> bool {
-        return format!("{:x}", md5::compute(&pixels)) == *hash;
-    }
 
     pub fn test_rom(file :&str) {
-        let path = "roms/gb-test-roms-master";
-        let path = format!("{}/{}", path, file);
+        let path = format!("{}/{}", ROMS_FOLDER, file);
 
         let file = file.split("/").into_iter().last().unwrap();
         let hash = load_md5(&file);
@@ -70,21 +75,24 @@ mod tests {
         gbemu.init();
 
         let screen = gbemu.get_screen();
-        let bus = gbemu.get_bus();
-        let cpu = gbemu.get_cpu();
+        
+        // Every n ticks, get the screen state and compare its hash
+        let frames_for_screenshot = 60; // 1s
+        let mut frames :u32 = 0;
 
-        let s_limit = 10; // 10s
+        let timeout_s: u64 = 20;
         let start = SystemTime::now();
-        let ticks_screenshot = 10000; // Get screen state every 10000 ticks;
-        let mut ticks :u32 = 0;
 
-        while start.elapsed().unwrap().as_secs() < s_limit {
-            cpu.tick();
-            bus.borrow_mut().tick();
+        while start.elapsed().unwrap().as_secs() < timeout_s {
+            gbemu.run_frame();
 
-            ticks += 1;
-            if ticks == ticks_screenshot {
-                ticks = 0;
+            if gbemu.is_quit() {
+                break;
+            }
+
+            frames += 1;
+            if frames >= frames_for_screenshot {
+                frames = 0;
 
                 if hash_matches(&screen.borrow().get_pixels(), &hash) {
                     return;
