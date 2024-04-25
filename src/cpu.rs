@@ -7,38 +7,37 @@ use crate::consts::*;
 
 mod opcodes;
 
-pub struct CPU {
-    regs                    : [REG;REG_N as usize],
-    sp                      : SPSIZE,                           // Stack Pointer
-    pc                      : PCSIZE,                           // Program Counter
-    bus                     : Rc<RefCell<Bus>>,                 // Refcell to keep it for the debugger
-    opcode                  : u8,                               // Actual opcode
-    opcode_cb               : u8,                               // Actual opcode
-    is_cb_opcode            : bool,
-    has_fetched_cb_opcode   : bool,
+pub struct CPU {            
+    regs                            : [REG;REG_N as usize],
+    sp                              : SPSIZE,                   // Stack Pointer
+    pc                              : PCSIZE,                   // Program Counter
+    bus                             : Rc<RefCell<Bus>>,         // Refcell to keep it for the debugger
+    opcode                          : u8,                       // Actual opcode
+    opcode_cb                       : u8,                       // Actual opcode
+    is_cb_opcode                    : bool,
+    has_fetched_cb_opcode           : bool,
 
-    is_instr_done           : bool,
+    is_instr_done                   : bool,
 
-
-    instr_m_cycle           : u8,       // Actual m-cycle executing the current instruction
-    cache                   : [u8;4],   // Cache for storing temporary values between M-cycles
-    cache16                 : [u16;4],  // Cache for storing temporary values between M-cycles
+    instr_m_cycle                   : u8,      // Actual m-cycle executing the current instruction
+    cache                           : [u8;4],  // Cache for storing temporary values between M-cycles
+    cache16                         : [u16;4], // Cache for storing temporary values between M-cycles
 
     int                             : Rc<RefCell<InterruptManager>>,
     is_transfer_control_interrupt   : bool,
     transfer_control_addr           : u16,
 
-
-    schedule_ime            : bool,     // Schedule next M-cycle for IME
+    // Schedule next M-cycle for IME
+    schedule_ime                    : bool,                    
 
     // HALT/STOP flags
-    is_halt                 : bool,
-    enable_halt_bug         : bool,
+    is_halt                         : bool,
+    enable_halt_bug                 : bool,
 
-    is_stop                 : bool,
+    is_stop                         : bool,
 
     // Timer counters
-    t_cycle                 : u64,
+    t_cycle                         : u64,
 }
 
 impl CPU {
