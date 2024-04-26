@@ -29,7 +29,7 @@ impl MBCTest {
 impl Cartridge for MBCTest {
     fn init(&mut self) {
         // TODO: Disable on debug
-        self.print_rom_data();
+        //self.print_rom_data();
     }
 
     fn read(&self, addr :u16) -> u8 {
