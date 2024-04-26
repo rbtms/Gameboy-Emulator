@@ -3,6 +3,7 @@ mod mbc1;
 mod mbc2;
 mod mbc3;
 mod mbc5;
+mod mbc_test;
 
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
@@ -28,7 +29,8 @@ pub enum CartridgeType {
     MBC5_RAM_BAT_RUMBLE = 0x1E,
     MBC6                = 0x20,
     MBC7                = 0x22,
-    OTHER               = 0xFF
+    MBCTest             = 0xFF,
+    OTHER               = 0xF0
 }
 
 impl From<u8> for CartridgeType {
@@ -55,6 +57,7 @@ impl From<u8> for CartridgeType {
             0x1E => CartridgeType::MBC5_RAM_BAT_RUMBLE,
             0x20 => CartridgeType::MBC6,
             0x22 => CartridgeType::MBC7,
+            0xFF => CartridgeType::MBCTest,
             _    => CartridgeType::OTHER
         }
     }
@@ -76,6 +79,7 @@ impl CartridgeType {
 
     pub fn mbc_n(&self) -> u8 {
         let s = format!("{:?}", self);
+        println!("type {}", s);
 
         return if      s.contains("MBC1") {1}
                else if s.contains("MBC2") {2}
@@ -83,6 +87,7 @@ impl CartridgeType {
                else if s.contains("MBC5") {5}
                else if s.contains("MBC6") {6}
                else if s.contains("MBC7") {7}
+               else if s.contains("MBCTest") {255}
                else                       {0};
     }
 }
@@ -106,6 +111,7 @@ pub fn load_cartridge(path :&str) -> Box<dyn Cartridge> {
         2 => Box::new(mbc2::MBC2::new(&file, rom)),
         3 => Box::new(mbc3::MBC3::new(&file, rom)),
         //5 => Box::new(mbc5::MBC5::new(&file, rom)),
+        255 => Box::new(mbc_test::MBCTest::new(&file, rom)),
         _ => panic!("MBC type not supported: {:?}", cartridge_type)
     }
 }

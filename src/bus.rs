@@ -73,6 +73,8 @@ impl Bus {
     }
 
     pub fn read(&self, addr :u16) -> u8 {
+        // return self.cart.read(addr); // For tests. Remove.
+
         if self.is_oam_dma {
             return self.read_oam_dma(addr);
         }
@@ -124,6 +126,8 @@ impl Bus {
     }
 
     pub fn write(&mut self, addr :u16, val :u8) {
+        // return self.cart.write(addr, val); // For tests. Remove.
+
         // Intercept DMA address to start OAM DMA
         if addr == ADDR_DMA {
             //println!("DMA {:04X}", (val as u16)<<8);
@@ -172,7 +176,9 @@ impl Bus {
                 ADDR_IE | ADDR_IF
                     => self.int.borrow_mut().write(addr, val),
                 // General RAM
-                _ => self.ram.write(addr, val)
+                _ => {
+                    self.ram.write(addr, val);
+                }
             }
         }
     }
@@ -224,4 +230,3 @@ impl Bus {
         self.cart.save_ram();
     }
 }
-

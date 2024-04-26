@@ -717,6 +717,7 @@ impl CPU {
 
         if self.t_cycle%4 == 0 {
             self.t_cycle = 0;
+
             // 1 M-cycle
             // TODO: Check off-by-one errors
             if self.is_halt {

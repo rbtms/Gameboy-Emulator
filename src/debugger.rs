@@ -220,7 +220,7 @@ impl Debugger {
     }
 
     /* Print some CPU state. Its old but sometimes useful */
-    pub fn print_state(&self, cpu :&CPU, bus :&Bus) {
+    pub fn print_state(&self, cpu :&CPU) {
         println!("
 +-----------+
 | CPU State |
@@ -241,11 +241,10 @@ impl Debugger {
       DIV : 0x{:02X}  TIMA : 0X{:02X}  TMA : 0x{:02X}  TAC : 0x{:02x}                  
 
 ",
-    cpu.get_pc(), cpu.get_sp(), bus.read(ADDR_IE), bus.read(ADDR_IF), cpu.get_ime(),
+    cpu.get_pc(), cpu.get_sp(), cpu.read(ADDR_IE), cpu.read(ADDR_IF), cpu.get_ime(),
     cpu.is_wait(),
     cpu.reg(REG_A), cpu.reg(REG_B), cpu.reg(REG_D), cpu.reg(REG_H),
     cpu.reg(REG_F), cpu.reg(REG_C), cpu.reg(REG_E), cpu.reg(REG_L),
-    bus.read(ADDR_DIV), bus.read(ADDR_TIMA), bus.read(ADDR_TMA), bus.read(ADDR_TAC));
+    cpu.read(ADDR_DIV), cpu.read(ADDR_TIMA), cpu.read(ADDR_TMA), cpu.read(ADDR_TAC));
     }
 }
-

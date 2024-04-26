@@ -91,7 +91,7 @@ mod tests {
             }
 
             frames += 1;
-            if frames >= frames_for_screenshot {
+            if frames == frames_for_screenshot {
                 frames = 0;
 
                 if hash_matches(&screen.borrow().get_pixels(), &hash) {
@@ -156,4 +156,3 @@ mod tests {
 
 fn main() {
 }
-
