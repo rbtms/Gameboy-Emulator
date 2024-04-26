@@ -79,16 +79,15 @@ impl CartridgeType {
 
     pub fn mbc_n(&self) -> u8 {
         let s = format!("{:?}", self);
-        println!("type {}", s);
 
-        return if      s.contains("MBC1") {1}
-               else if s.contains("MBC2") {2}
-               else if s.contains("MBC3") {3}
-               else if s.contains("MBC5") {5}
-               else if s.contains("MBC6") {6}
-               else if s.contains("MBC7") {7}
+        return if      s.contains("MBC1")    {1}
+               else if s.contains("MBC2")    {2}
+               else if s.contains("MBC3")    {3}
+               else if s.contains("MBC5")    {5}
+               else if s.contains("MBC6")    {6}
+               else if s.contains("MBC7")    {7}
                else if s.contains("MBCTest") {255}
-               else                       {0};
+               else                          {0};
     }
 }
 
