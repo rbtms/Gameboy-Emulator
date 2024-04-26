@@ -18,3 +18,13 @@ mem_timing.gb:2cd2b04d8ec6c4c8db347fb5354bb785
 02-02-write_timing.gb:bca3a12d6707944f3c128d6625f2007b
 02-03-modify_timing.gb:a780543c6d2b144018c0a101e22f074d
 02-mem_timing.gb:5a254615feb1cdc9950a499f4d98754c
+oam_bug.gb:nohash
+halt_bug.gb:nohash
+1-lcd_sync.gb:nohash
+2-causes.gb:nohash
+3-non_causes.gb:nohash
+4-scanline_timing.gb:nohash
+5-timing_bug.gb:nohash
+6-timing_no_bug.gb:nohash
+7-timing_effect.gb:nohash
+8-instr_effect.gb:nohash

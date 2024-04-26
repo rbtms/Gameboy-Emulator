@@ -10,13 +10,13 @@ mod tests {
         let lines :Vec<&str> = file.lines().into_iter().collect();
 
         for line in lines {
-            println!("{} filename {}", line, filename);
+            println!("{}", line);
             if line.contains(&filename) {
                 return line.split(":").into_iter().last().unwrap().to_string();
             }
         }
 
-        panic!();
+        panic!("Could not load MD5 hash of file {}", filename);
     }
 
     pub fn hash_matches(pixels :&Vec<u8>, hash :&String) -> bool {
@@ -146,9 +146,24 @@ mod tests {
     #[test]
     pub fn test_rom_mem_2_modify_timing()   { test_rom("mem_timing-2/rom_singles/02-03-modify_timing.gb"); }
 
-    // TODO: individuals
     //#[test]
     //pub fn test_rom_oam_bug()   { test_rom("oam_bug/oam_bug.gb"); }
+    //#[test]
+    //pub fn test_rom_oam_bug_lcd_sync()   { test_rom("oam_bug/rom_singles/1-lcd_sync.gb"); }
+    //#[test]
+    //pub fn test_rom_oam_bug_causes()   { test_rom("oam_bug/rom_singles/2-causes.gb"); }
+    //#[test]
+    //pub fn test_rom_oam_bug_non_causes()   { test_rom("oam_bug/rom_singles/3-non_causes.gb"); }
+    //#[test]
+    //pub fn test_rom_oam_bug_scanline_timing()   { test_rom("oam_bug/rom_singles/4-scanline_timing.gb"); }
+    //#[test]
+    //pub fn test_rom_oam_bug_timing_bug()   { test_rom("oam_bug/rom_singles/5-timing_bug.gb"); }
+    //#[test]
+    //pub fn test_rom_oam_bug_timing_no_bug()   { test_rom("oam_bug/rom_singles/6-timing_no_bug.gb"); }
+    //#[test]
+    //pub fn test_rom_oam_bug_timing_effect()   { test_rom("oam_bug/rom_singles/7-timing_effect.gb"); }
+    //#[test]
+    //pub fn test_rom_oam_bug_instr_effect()   { test_rom("oam_bug/rom_singles/8-instr_effect.gb"); }
 
     //#[test]
     //pub fn test_rom_halt_bug()   { test_rom("halt_bug.gb"); }
