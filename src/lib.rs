@@ -5,7 +5,6 @@ pub mod bus;
 pub mod ppu;
 pub mod apu;
 pub mod joypad;
-pub mod timer;
 pub mod screen;
 #[allow(non_snake_case)]
 pub mod interruptManager;

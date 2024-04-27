@@ -3,17 +3,17 @@ use std::rc::Rc;
 
 use crate::ppu::PPU;
 use crate::apu::APU;
-use crate::timer::Timer;
 use crate::interruptManager::InterruptManager;
 use crate::joypad::Joypad;
 use crate::cartridge::{Cartridge, load_cartridge};
 use crate::consts::*;
 
 mod ram;
+mod timer;
 
 pub struct Bus {
     ram    : ram::RAM,
-    timer  : Timer,
+    timer  : timer::Timer,
     ppu    : PPU,
     apu    : APU,
     int    : Rc<RefCell<InterruptManager>>,
@@ -36,7 +36,7 @@ impl Bus {
                path     :&str) -> Bus {
         return Bus {
             ram   : ram::RAM::new(),
-            timer : Timer::new(int.clone()),
+            timer : timer::Timer::new(int.clone()),
             cart  : load_cartridge(path),
             ppu,
             apu,
