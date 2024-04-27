@@ -114,4 +114,3 @@ pub fn load_cartridge(path :&str) -> Box<dyn Cartridge> {
         _ => panic!("MBC type not supported: {:?}", cartridge_type)
     }
 }
-
