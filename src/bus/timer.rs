@@ -4,9 +4,6 @@ use std::rc::Rc;
 use crate::interruptManager::InterruptManager;
 use crate::consts::*;
 
-pub type RAMVAL   = u8;
-pub type RAMINDEX = u16;
-
 pub struct Timer {
     timer_counter   :u16,
 

@@ -1,7 +1,7 @@
 /target
 *.gb
 logs
-tests/roms
-tests/adtennant
-gb-test-roms-master
-mts
+tests/roms/*
+tests/adtennant/*
+tests/blargg/*
+tests/mts/*
