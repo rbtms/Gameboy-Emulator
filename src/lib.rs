@@ -10,4 +10,3 @@ pub mod screen;
 pub mod interruptManager;
 pub mod cartridge;
 pub mod consts;
-

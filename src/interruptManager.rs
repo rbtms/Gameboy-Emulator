@@ -91,4 +91,3 @@ impl InterruptManager {
         return self.IME && ((self.IF & self.IE & 0x1f) != 0); // 0x1f to ignore the first 3 bits
     }
 }
-

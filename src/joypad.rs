@@ -161,4 +161,3 @@ impl Joypad {
         self.mask = val;
     }
 }
-

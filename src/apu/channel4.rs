@@ -73,4 +73,3 @@ impl Channel4 {
     fn clock_divider(&self)       -> u8   { self.nr43 & 3 }
     fn sound_length_enable(&self) -> bool { self.is_bit_set(self.nr44, 6) }
 }
-

@@ -137,4 +137,3 @@ impl Screen {
         self.canvas.window_mut().set_title(&format!("fps {} | {}", fps, self.rom_path)).unwrap();
     }
 }
-

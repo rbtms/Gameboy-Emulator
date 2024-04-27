@@ -182,4 +182,3 @@ impl APU {
         self.prev_div_bit = div_bit;
     }
 }
-

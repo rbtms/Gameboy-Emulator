@@ -96,4 +96,3 @@ impl Channel1 {
     fn period(&self)              -> u16  { (self.nr13 as u16) | ((self.nr14 as u16 & 3) << 8) }
     fn sound_length_enable(&self) -> bool { self.is_bit_set(self.nr14, 6)  }
 }
-

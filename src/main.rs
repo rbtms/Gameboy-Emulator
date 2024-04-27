@@ -44,4 +44,3 @@ fn main() {
     gbemu.init();
     gbemu.run();
 }
-
