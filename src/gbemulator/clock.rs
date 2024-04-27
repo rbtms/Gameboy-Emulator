@@ -54,7 +54,7 @@ impl Clock {
         self.t_start_frame = SystemTime::now();
     }
 
-    pub fn get_fps(&mut self, screen :&mut Screen) -> u16 {
+    pub fn get_fps(&mut self) -> u16 {
         let actual_s = self.time_start.elapsed().unwrap().as_secs(); // Actual second
         self.fps += 1;
 

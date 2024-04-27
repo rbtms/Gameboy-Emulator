@@ -34,7 +34,9 @@ pub struct GBEmulator {
     is_debug        : bool,
 
     screen          : Rc<RefCell<Screen>>,
-//    controller      : sdl2::controller::GameController,
+
+    #[allow(dead_code)]
+    controller      : sdl2::controller::GameController,
 
     // Input
     events :sdl2::EventPump,
@@ -45,7 +47,6 @@ impl GBEmulator {
     pub fn new(rom_path :&str, is_debug :bool) -> GBEmulator {
         let sdl_context = sdl2::init().unwrap();
         let screen = Rc::new(RefCell::new(Screen::new(&sdl_context, rom_path.to_string())));
-//        let controller = sdl_context.game_controller().unwrap().open(0).unwrap();
         let audio = sdl_context.audio().unwrap();
         let apu   = APU::new(audio);
 
@@ -66,7 +67,9 @@ impl GBEmulator {
             events: sdl_context.event_pump().unwrap(),
             screen: screen.clone(),
 
-//            controller,
+            // While the controller variable is not used, it works due to existing and being owned by
+            // an existing object.
+            controller: sdl_context.game_controller().unwrap().open(0).unwrap(),
 
             is_quit: false,
         }
@@ -118,8 +121,10 @@ impl GBEmulator {
 
     pub fn run_frame(&mut self) {
         // Time adjustment for 4.19MHz / 60 fps
-        self.clock.wait_next_frame(); 
-        let fps = self.clock.get_fps(&mut self.screen.borrow_mut());
+        self.clock.wait_next_frame();
+
+        // Set title FPS
+        let fps = self.clock.get_fps();
         self.screen.borrow_mut().set_title_fps(fps);
 
         for _ in 0..TICKS_PER_FRAME {
