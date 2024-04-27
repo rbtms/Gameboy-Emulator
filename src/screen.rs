@@ -133,7 +133,7 @@ impl Screen {
         self.rects = vec![vec![], vec![], vec![], vec![]]
     }
 
-    pub fn set_title_fps(&mut self, fps :u8) {
+    pub fn set_title_fps(&mut self, fps :u16) {
         self.canvas.window_mut().set_title(&format!("fps {} | {}", fps, self.rom_path)).unwrap();
     }
 }

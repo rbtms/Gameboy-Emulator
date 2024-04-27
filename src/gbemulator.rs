@@ -119,7 +119,8 @@ impl GBEmulator {
     pub fn run_frame(&mut self) {
         // Time adjustment for 4.19MHz / 60 fps
         self.clock.wait_next_frame(); 
-        self.clock.update_fps(&mut self.screen.borrow_mut());
+        let fps = self.clock.get_fps(&mut self.screen.borrow_mut());
+        self.screen.borrow_mut().set_title_fps(fps);
 
         for _ in 0..TICKS_PER_FRAME {
             self.try_update_debugger();

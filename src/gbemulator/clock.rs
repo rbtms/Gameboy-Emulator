@@ -13,20 +13,29 @@ pub struct Clock {
     dur_s_per_frame :Duration,
     time_start      :SystemTime,
     last_s          :u64,
-    fps             :u8
+    fps             :u16,
+    last_fps_value  :u16
 }
 
 impl Clock {
     pub fn new() -> Clock {
         return Clock {
-            dur_s_per_frame : Duration::from_secs_f64(S_PER_FRAME),
-            t_start_frame : SystemTime::now(),
-            dur_frame     : Duration::from_secs(0), 
+            // Expected duration of frames in seconds
+            dur_s_per_frame: Duration::from_secs_f64(S_PER_FRAME),
+            // Start time of the frame
+            t_start_frame: SystemTime::now(),
+            // Frame duration
+            dur_frame: Duration::from_secs(0),
 
-            // fps
-            time_start   : SystemTime::now(),
-            last_s       : 0,
-            fps          : 0,
+            // FPS
+            // Start time of the frame
+            time_start: SystemTime::now(),
+            // Last second
+            last_s: 0,
+            // Value incremented in each tick
+            fps: 0,
+             // Value which will be set to fps at the end of every frame
+            last_fps_value: 0,
         }
     }
 
@@ -45,14 +54,16 @@ impl Clock {
         self.t_start_frame = SystemTime::now();
     }
 
-    pub fn update_fps(&mut self, screen :&mut Screen) {
+    pub fn get_fps(&mut self, screen :&mut Screen) -> u16 {
         let actual_s = self.time_start.elapsed().unwrap().as_secs(); // Actual second
         self.fps += 1;
 
         if actual_s != self.last_s {
             self.last_s = actual_s;
-            screen.set_title_fps(self.fps);
+            self.last_fps_value = self.fps;
             self.fps = 0;
         }
+
+        return self.last_fps_value;
     }
 }
