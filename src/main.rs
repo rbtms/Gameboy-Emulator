@@ -23,7 +23,7 @@ fn parse_args() -> HashMap<&'static str, String> {
     let rom_path = if args.len() > 1 {
         args[1].clone()
     } else {
-        "roms/gb-test-roms-master/cpu_instrs/cpu_instrs.gb"
+        "tests/roms/blargg/cpu_instrs/cpu_instrs.gb"
             .to_string()
     };
 

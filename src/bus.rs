@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::ram::RAM;
 use crate::ppu::PPU;
 use crate::apu::APU;
 use crate::timer::Timer;
@@ -10,8 +9,10 @@ use crate::joypad::Joypad;
 use crate::cartridge::{Cartridge, load_cartridge};
 use crate::consts::*;
 
+mod ram;
+
 pub struct Bus {
-    ram    : RAM,
+    ram    : ram::RAM,
     timer  : Timer,
     ppu    : PPU,
     apu    : APU,
@@ -34,7 +35,7 @@ impl Bus {
                joypad   :Rc<RefCell<Joypad>>,
                path     :&str) -> Bus {
         return Bus {
-            ram   : RAM::new(),
+            ram   : ram::RAM::new(),
             timer : Timer::new(int.clone()),
             cart  : load_cartridge(path),
             ppu,
