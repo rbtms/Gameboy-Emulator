@@ -1,10 +1,10 @@
 use std::time::{Duration, SystemTime};
 use std::thread::sleep;
 
-use crate::screen::Screen;
 
 // GLobal constants
 const S_PER_FRAME     :f64 = 1.0/60.0;
+
 
 pub struct Clock {
     t_start_frame   :SystemTime,

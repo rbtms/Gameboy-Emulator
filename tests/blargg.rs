@@ -23,48 +23,6 @@ mod tests {
         return format!("{:x}", md5::compute(&pixels)) == *hash;
     }
 
-    /*
-     Tests ROMs such that the result is compared with a specific register.
-     It's better not to use since it gives problems with some memory tests.
-     */
-    pub fn test_rom_with_register(file :&str) {
-        let path = format!("{}/{}", ROMS_FOLDER, file);
-
-        let mut gbemu = GBEmulator::new(&path, false);
-        gbemu.init();
-
-        let bus = gbemu.get_bus();
-        let cpu = gbemu.get_cpu();
-
-        let timeout_s = 10;
-        let start = SystemTime::now();
-
-        // First fetch
-        //for _ in 0..4 { cpu.tick(); }
-
-        let mut output :String = String::new();
-        while start.elapsed().unwrap().as_secs() < timeout_s {
-            cpu.tick();
-            bus.borrow_mut().tick();
-
-            if !cpu.is_wait() && bus.borrow().read(0xff02) == 0xFF {
-                output.push(bus.borrow().read(0xFF01) as char);
-                bus.borrow_mut().write(0xff02, 0);
-
-                if output.contains("Passed") {
-                    return;
-                }
-                else if output.contains("Failed") {
-                    println!("{}", &output);
-                    assert!(false, "Failed");
-                }
-            }
-        }
-
-        assert!(false, "Timeout");
-    }
-
-
     pub fn test_rom(file :&str) {
         let path = format!("{}/{}", ROMS_FOLDER, file);
 

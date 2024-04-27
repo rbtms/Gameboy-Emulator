@@ -86,36 +86,6 @@ impl MBC3 {
     pub fn map_ext_ram_addr(&self, addr :u16) -> u16 {
         return addr - EXT_RAM_START + 0x2000*self.reg_ram_bank as u16;
     }
-    
-    /*
-     * Debug
-     */
-
-    pub fn print_rom_data(&self) {
-        println!("\nFile:\n{}", self.file);
-        
-        println!("\nTitle:");
-        for n in self.rom[0x134..=0x143].iter() {
-            if *n >= 60 && *n <= 120 { // Pritable ascii
-                print!("{}", *n as char);
-            }
-        }
-        println!();
-
-        println!("\nCGB Flag\t\t: {}", self.cgb_flag);
-        println!("SGB Flag\t\t: {}", self.sgb_flag);
-        println!("Cartridge type\t\t: {:?}", self.cartridge_type);
-        println!("ROM size\t\t: {} KiB", self.rom_size);
-        println!("ROM Banks \t\t: {}", self.rom_bank_n);
-        println!("RAM size\t\t: {} KiB", self.ram_size);
-        println!("RAM Banks \t\t: {}", self.ram_bank_n);
-        println!("Mask ROM version number\t: 0x{:02X}", self.mask_rom_version_n);
-        println!("Header checksum\t\t: 0x{:02X}", self.header_checksum);
-        println!("Global checksum\t\t: 0x{:04X}", self.global_checksum);
-        println!();
-        println!("ROM loaded");
-        println!("--------------------------------------\n");
-    }
 }
 
 impl Cartridge for MBC3 {
@@ -218,6 +188,32 @@ impl Cartridge for MBC3 {
             let mut file = std::fs::File::create(path).unwrap();
             file.write_all(&self.ext_ram).unwrap();
         }
+    }
+
+    fn print_rom_data(&self) {
+        println!("\nFile:\n{}", self.file);
+        
+        println!("\nTitle:");
+        for n in self.rom[0x134..=0x143].iter() {
+            if *n >= 60 && *n <= 120 { // Pritable ascii
+                print!("{}", *n as char);
+            }
+        }
+        println!();
+
+        println!("\nCGB Flag\t\t: {}", self.cgb_flag);
+        println!("SGB Flag\t\t: {}", self.sgb_flag);
+        println!("Cartridge type\t\t: {:?}", self.cartridge_type);
+        println!("ROM size\t\t: {} KiB", self.rom_size);
+        println!("ROM Banks \t\t: {}", self.rom_bank_n);
+        println!("RAM size\t\t: {} KiB", self.ram_size);
+        println!("RAM Banks \t\t: {}", self.ram_bank_n);
+        println!("Mask ROM version number\t: 0x{:02X}", self.mask_rom_version_n);
+        println!("Header checksum\t\t: 0x{:02X}", self.header_checksum);
+        println!("Global checksum\t\t: 0x{:04X}", self.global_checksum);
+        println!();
+        println!("ROM loaded");
+        println!("--------------------------------------\n");
     }
 }
 
