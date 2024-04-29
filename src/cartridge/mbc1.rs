@@ -23,7 +23,7 @@ pub struct MBC1 {
     global_checksum     : u16,
 
     // MBC registers
-    enable_ext_ram      : bool,
+    ramg                : bool, // RAM gate register / RAM enable/disable
     reg_bank1           : u8,
     reg_bank2           : u8,
     selected_mode       : u8
@@ -60,10 +60,10 @@ impl MBC1 {
             ext_ram,
 
             // MBC registers
-            reg_bank1           : 0x00,
-            reg_bank2           : 0x00,
-            enable_ext_ram      : false,
-            selected_mode       : 0
+            reg_bank1     : 0x00,
+            reg_bank2     : 0x00,
+            ramg          : false,
+            selected_mode : 0
         }
     }
 
@@ -138,7 +138,7 @@ impl Cartridge for MBC1 {
             // thing is to return FF per pandocs.
             EXT_RAM_START..=EXT_RAM_END => if self.cartridge_type.has_ram()
                                            && self.ram_size > 0
-                                           && self.enable_ext_ram {
+                                           && self.ramg {
                 self.ext_ram[self.map_ext_ram_addr(addr)]
             } else {
                 0xFF
@@ -155,7 +155,7 @@ impl Cartridge for MBC1 {
         match addr {
             // External RAM enable/disable
             // Lower 4 bits are A: Enable. Otherwise: Disable.
-            0x0000..=0x1FFF => self.enable_ext_ram = (val&0x0F) == 0x0A,
+            0x0000..=0x1FFF => self.ramg = (val&0x0F) == 0x0A,
             // ROM bank select
             0x2000..=0x3FFF => {
                 // Only the 5 lower bits are taken. If val > number of banks, its masked by the
@@ -166,7 +166,7 @@ impl Cartridge for MBC1 {
                 self.reg_bank1 = bank_n as u8;
             },
             // RAM bank select / 2 upper bits of BANK1 select
-            0x4000..=0x5FFF => if self.enable_ext_ram {
+            0x4000..=0x5FFF => if self.ramg {
                 if self.ram_size > 8 || self.rom_size >= 1024 {
                     //if val > 3 { panic!("write(); Invalid ram bank: {}", val); }
                     self.reg_bank2 = val&0b11; // 00~11
@@ -182,7 +182,7 @@ impl Cartridge for MBC1 {
                 }
             }
             // External RAM write
-            0xA000..=0xBFFF => if self.enable_ext_ram {
+            0xA000..=0xBFFF => if self.ramg {
                 if self.cartridge_type.has_ram() && self.ram_size > 0 {
                     let _addr = self.map_ext_ram_addr(addr);
                     self.ext_ram[_addr as usize] = val;
