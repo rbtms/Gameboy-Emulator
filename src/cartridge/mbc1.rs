@@ -4,6 +4,7 @@ use std::io::prelude::Write;
 
 
 const SAVE_PATH :&str = "roms/games/saves";
+const ROM_BANK_SIZE :u16 = 0x4000;
 
 pub struct MBC1 {
     file                : String,
@@ -23,7 +24,7 @@ pub struct MBC1 {
 
     // MBC registers
     enable_ext_ram      : bool,
-    reg_bank1           : u16,
+    reg_bank1           : u8,
     reg_bank2           : u8,
     selected_mode       : u8
 }
@@ -59,29 +60,68 @@ impl MBC1 {
             ext_ram,
 
             // MBC registers
-            reg_bank1           : 0x01,
+            reg_bank1           : 0x00,
             reg_bank2           : 0x00,
             enable_ext_ram      : false,
             selected_mode       : 0
         }
     }
 
-    pub fn map_bank0_addr(&self, addr :u16)   -> u32 {
-        return addr as u32;
+    /*
+     Map the BANK0 address to the index of the rom array
+     
+     For the range 0000-3FFF the bank number depends mainly on the selected MODE.
+     If the MODE == 0, then the bank number is always 0, but if it's 1 the bank_n
+     equals to the bank2 register shifted to the left 5 places
+     */
+    pub fn map_bank0_addr(&self, addr :u16) -> usize {
+        let reg_bank2 = self.reg_bank2&0b11;
+
+        // If the ROM size isn't big enough, the selected mode has no effect
+        let mode = if self.rom_size <= 512 {0} else {self.selected_mode};
+
+        let bank_n = if mode == 0 {0} else { (reg_bank2 as u16) << 5 };
+        let offset = (ROM_BANK_SIZE as u32) * (bank_n as u32);
+        
+        return (addr as u32 + offset) as usize;
     }
-    pub fn map_bank1_addr(&self, addr :u16)   -> u32 {
-        //let bank_n = if self.selected_mode == 0 {self.reg_bank1 as u16} else { ((self.reg_bank2 as u16) << 5) | self.reg_bank1 };
-        let bank_n = self.reg_bank1;
-        return (addr - BANK1_START) as u32 + 0x4000*bank_n as u32;
+
+    /*
+     Map the BANK1 address to the index of the rom array
+
+     For the range 0x4000-7FFF, it always uses the 5 last bits of reg_bank1 and the last 2 of reg_bank2
+     to choose the bank number. If the resulting bank number is 0, it's treated as 1 instead because
+     it's the start of the range 0x4000-7FFF.
+    */
+    pub fn map_bank1_addr(&self, addr :u16) -> usize {
+        let reg_bank1 = self.reg_bank1&0b11111;
+        let reg_bank2 = self.reg_bank2&0b11;
+
+        // If the ROM size isn't big enough, the selected mode has no effect
+        let mode = if self.rom_size <= 512 {0} else {self.selected_mode};
+
+        let bank_n = if mode == 0 {reg_bank1 as u16} else {((reg_bank2 as u16) << 5) | (reg_bank1 as u16)};
+        let bank_n = bank_n.max(1); // Treat bank 00 as 01
+
+        let base_addr = (addr - BANK1_START) as u32; // Start at 0x0000 because bank_n is going to be at least 1
+        let offset = (ROM_BANK_SIZE as u32) * (bank_n as u32);
+
+        //if bank_n > 1 { println!("BANK {}: ADDR: {:x}, VAL: {}", bank_n, base_addr + offset, self.rom[(base_addr + offset) as usize]) }
+
+        return (base_addr + offset) as usize;
     }
-    pub fn map_ext_ram_addr(&self, addr :u16) -> u16 {
-        let bank_i = if self.selected_mode == 0 {0} else {self.reg_bank2};
-        return addr - EXT_RAM_START + 0x2000*bank_i as u16;
+
+    // Map the ext RAM address to an index of the array where it's stored
+    pub fn map_ext_ram_addr(&self, addr :u16) -> usize {
+        let bank_n = if self.selected_mode == 0 {0} else {self.reg_bank2};
+        return (addr - EXT_RAM_START + 0x2000*bank_n as u16) as usize;
     }
 }
 
 impl Cartridge for MBC1 {
     fn init(&mut self) {
+        self.reg_bank1 = 1;
+//        println!("0x4000: {:x}", self.map_bank1_addr(0x4000));
         if self.cartridge_type.has_ram() && self.ram_size > 0 {
             self.load_ram();
         }
@@ -91,13 +131,15 @@ impl Cartridge for MBC1 {
 
     fn read(&self, addr :u16) -> u8 {
         return match addr {
-            BANK0_START..=BANK0_END => self.rom[self.map_bank0_addr(addr) as usize],
-            BANK1_START..=BANK1_END => self.rom[self.map_bank1_addr(addr) as usize],
-            // TODO: Check that RAM is enabled
+            BANK0_START..=BANK0_END => self.rom[self.map_bank0_addr(addr)],
+            BANK1_START..=BANK1_END => self.rom[self.map_bank1_addr(addr)],
+            // TODO: Check that RAM is enabled.
+            // It checks RAM is enabled. In case it isn't, the most frequent
+            // thing is to return FF per pandocs.
             EXT_RAM_START..=EXT_RAM_END => if self.cartridge_type.has_ram()
                                            && self.ram_size > 0
                                            && self.enable_ext_ram {
-                self.ext_ram[self.map_ext_ram_addr(addr) as usize]
+                self.ext_ram[self.map_ext_ram_addr(addr)]
             } else {
                 0xFF
             }
@@ -105,6 +147,10 @@ impl Cartridge for MBC1 {
         }
     }
 
+    /*
+     For writes, the range 0000~7FFF does not set values in the ROM, but the written values
+     are used to set registers.
+     */
     fn write(&mut self, addr :u16, val :u8) {
         match addr {
             // External RAM enable/disable
@@ -114,24 +160,24 @@ impl Cartridge for MBC1 {
             0x2000..=0x3FFF => {
                 // Only the 5 lower bits are taken. If val > number of banks, its masked by the
                 // corresponding number of bits from the bank number
-                let mut bank_n = (val&0x1f) as u16 % self.rom_bank_n;
-                if bank_n == 0x00 || bank_n == 0x20 || bank_n == 0x40 || bank_n == 0x60 { bank_n += 1; }
+                let bank_n = ((val&0b11111) as u16) % self.rom_bank_n;
+                //if bank_n == 0x00 || bank_n == 0x20 || bank_n == 0x40 || bank_n == 0x60 { bank_n += 1; }
 
-                self.reg_bank1 = bank_n as u16;
+                self.reg_bank1 = bank_n as u8;
             },
             // RAM bank select / 2 upper bits of BANK1 select
             0x4000..=0x5FFF => if self.enable_ext_ram {
                 if self.ram_size > 8 || self.rom_size >= 1024 {
-                    if val > 3 { panic!("write(); Invalid ram bank: {}", val); }
-                    self.reg_bank2 = val; // 00~11
+                    //if val > 3 { panic!("write(); Invalid ram bank: {}", val); }
+                    self.reg_bank2 = val&0b11; // 00~11
                 }
             },
             // Mode select
             0x6000..=0x7FFF => {
                 // If the ROM <= 512 KiB or RAM <= 8 KiB, this register has no observable
                 // effects
-                if self.ram_size > 8 || self.rom_size > 512 {
-                    if val > 1 { panic!("write(); Invalid mode") }
+                if self.rom_size > 512 || self.ram_size > 8 {
+                    //if val > 1 { panic!("write(); Invalid mode") }
                     self.selected_mode = val;
                 }
             }

@@ -30,7 +30,7 @@ else
     cmd="cargo test --package gb --test $target_file -- --show-output --test-threads=1"
 fi
 
-echo cmd: $cmd
+echo cmd: $cmd $3
 echo
 
 $cmd

@@ -8,7 +8,7 @@ mod tests {
     type Bus = gb::bus::Bus;
 
     const ROM_FOLDER :&str = "tests/roms/mts/acceptance";
-    const TIMEOUT_S  :u64  = 2; // 1 test might timeout too soon
+    const TIMEOUT_S  :u64  = 5; // 1 test might timeout too soon
     
     fn debug_mooneye_passed(cpu :&CPU) -> bool {
         return (cpu.reg(REG_B), cpu.reg(REG_C), cpu.reg(REG_D),

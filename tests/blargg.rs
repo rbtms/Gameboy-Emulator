@@ -10,7 +10,6 @@ mod tests {
         let lines :Vec<&str> = file.lines().into_iter().collect();
 
         for line in lines {
-            println!("{}", line);
             if line.contains(&filename) {
                 return line.split(":").into_iter().last().unwrap().to_string();
             }

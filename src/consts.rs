@@ -56,6 +56,7 @@ pub const ADDR_IE    :u16 = 0xFFFF;
 pub const WAVE_RAM_START :u16 = 0xFF30;
 pub const WAVE_RAM_END   :u16 = 0xFF3F;
 
+// MBC
 pub const BANK0_START       :u16 = 0x0000;
 pub const BANK0_END         :u16 = 0x3FFF;
 pub const BANK1_START       :u16 = 0x4000;
