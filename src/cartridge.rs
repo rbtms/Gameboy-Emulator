@@ -1,3 +1,5 @@
+use crate::consts::CART_HEADER_CART_TYPE;
+
 mod rom;
 mod mbc1;
 mod mbc2;
@@ -100,10 +102,11 @@ pub trait Cartridge {
     fn print_rom_data(&self);
 }
 
+
 pub fn load_cartridge(path :&str) -> Box<dyn Cartridge> {
     let rom = std::fs::read(path).unwrap();
     let file = path.split('/').last().unwrap();
-    let cartridge_type :CartridgeType = rom[0x147].into();
+    let cartridge_type :CartridgeType = rom[CART_HEADER_CART_TYPE].into();
 
     return match cartridge_type.mbc_n() {
         0 => Box::new(rom::ROM::new(path, rom)),

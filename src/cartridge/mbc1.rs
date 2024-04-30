@@ -60,14 +60,13 @@ impl MBC1 {
      
      For the range 0000-3FFF the bank number depends mainly on the selected MODE.
      If the MODE == 0, then the bank number is always 0, but if it's 1 the bank_n
-     equals to the bank2 register shifted to the left 5 places
+     equals to the romb1 register shifted to the left 5 places
      */
     pub fn map_bank0_addr(&self, addr :u16) -> usize {
-        // If the ROM size isn't big enough, the selected mode has no effect
-        //let mode = if self.rom_size <= 512 {0} else {self.selected_mode};
+        let bank_n = if self.selected_mode == 0 {0} else { (self.romb1 as u16) << 5 };
+        let bank_n = bank_n % self.rom_bank_n;
 
-        let mut bank_n = if self.selected_mode == 0 {0} else { (self.romb1 as u16) << 5 };
-        let offset = (ROM_BANK_SIZE as u32) * ((bank_n % self.rom_bank_n) as u32);
+        let offset = (ROM_BANK_SIZE as u32) * (bank_n as u32);
         
         return (addr as u32 + offset) as usize;
     }
@@ -75,15 +74,15 @@ impl MBC1 {
     /*
      Map the BANK1 address to the index of the rom array
 
-     For the range 0x4000-7FFF, it always uses the 5 last bits of reg_bank1 and the last 2 of reg_bank2
-     to choose the bank number. If the resulting bank number is 0, it's treated as 1 instead because
-     it's the start of the range 0x4000-7FFF.
+     For the range 0x4000-7FFF, it always uses the 5 last bits of romb0 and the last 2 of romb1
+     to choose the bank number
     */
     pub fn map_bank1_addr(&self, addr :u16) -> usize {
-        let bank_n = if self.selected_mode == 0 {self.romb0 as u16} else {((self.romb1 as u16) << 5) | (self.romb0 as u16)};
+        let bank_n = ((self.romb1 as u16) << 5) | (self.romb0 as u16);
+        let bank_n = bank_n % self.rom_bank_n;
 
         let base_addr = (addr - BANK1_START) as u32; // Start at 0x0000 because bank_n is going to be at least 1
-        let offset = (ROM_BANK_SIZE as u32) * ((bank_n%self.rom_bank_n) as u32);
+        let offset = (ROM_BANK_SIZE as u32) * (bank_n as u32);
 
         return (base_addr + offset) as usize;
     }

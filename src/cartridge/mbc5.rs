@@ -13,8 +13,6 @@ pub struct MBC5 {
     rom                 : Vec<u8>,
     // 32 KiBs, or 4 KiB banks
     ext_ram             : Vec<u8>,
-    cgb_flag            : bool,
-    sgb_flag            : bool,
     cartridge_type      : CartridgeType,
     rom_size            : u16,
     rom_bank_n          : u16,
@@ -26,63 +24,40 @@ pub struct MBC5 {
 
     // MBC registers
     ramg  : bool, // RAM gate register / RAM enable/disable
-    romb0 : u8,
-    romb1 : u8,
+    romb  : u16,
     ramb  : u8, // RAM Bank
 }
 
 impl MBC5 {
     pub fn new(file :&str, rom :Vec<u8>) -> MBC5 {
         let cartridge_type :CartridgeType = rom[0x147].into();
-        let rom_bank_n = 1 << (rom[0x148]+1);
         let ram_size = if cartridge_type.has_ram() { [0, 0, 8, 32, 128, 64][rom[0x149] as usize] } else {0};
-        let ext_ram = vec![0;ram_size*1024];
-
-        /*
-         * Testing
-         */
-        //let mut rom = rom.clone();
-        //let mut v :Vec<u8> = vec![0;(512-64)*1024];
-        //rom.append(&mut v);
-        //let rom_bank_n = 32;
-
+        
         return MBC5 {
             file: file.to_string(),
-            cgb_flag            : rom[0x143] == 0xC0,
-            sgb_flag            : rom[0x146] == 0x03,
             cartridge_type,
-            rom_size            : 32 * (1 << rom[0x148]), // In KiB
-            rom_bank_n,
+            rom_size            : 32 * (1 << rom[CART_HEADER_ROM_SIZE]), // In KiB
+            rom_bank_n          : 1 << (rom[CART_HEADER_ROM_SIZE]+1),
             ram_size            : ram_size as u16,
             ram_bank_n          : (ram_size as u16/8),
-            mask_rom_version_n  : rom[0x14c],
-            header_checksum     : rom[0x14d],
-            global_checksum     : ((rom[0x14e] as u16) << 8) | rom[0x14f] as u16,
+            mask_rom_version_n  : rom[CART_HEADER_ROM_VERSION],
+            header_checksum     : rom[CART_HEADER_HEADER_CHECKSUM],
+            global_checksum     : ((rom[CART_HEADER_CHECKSUM_START] as u16) << 8) | rom[CART_HEADER_CHECKSUM_END] as u16,
             rom,
-            ext_ram,
+            ext_ram: vec![0;ram_size*1024],
 
             // MBC registers
-            romb0 : 0x01,
-            romb1 : 0x00,
+            romb  : 0x0001,
             ramg  : false,
             ramb  : 0,
         }
     }
 
     pub fn map_bank1_addr(&self, addr :u16) -> usize {
-        let bank_n = ((self.romb1 as u16) << 8) | (self.romb0 as u16);
-        let bank_n = bank_n % self.rom_bank_n;
-
-        let base_addr = (addr - BANK1_START) as u32;
-        let offset = (ROM_BANK_SIZE as u32) * (bank_n as u32);
-
-        return (base_addr + offset) as usize;
+        return ((addr - BANK1_START) + (ROM_BANK_SIZE*self.romb)) as usize;
     }
     pub fn map_ext_ram_addr(&self, addr :u16) -> usize {
-        let base_addr = addr - EXT_RAM_START;
-        let offset    = RAM_BANK_SIZE * self.ramb as u16;
-
-        return (base_addr + offset) as usize;
+        return ((addr - EXT_RAM_START) + (RAM_BANK_SIZE * self.ramb as u16)) as usize;
     }
 }
 
@@ -116,11 +91,17 @@ impl Cartridge for MBC5 {
                 // 0A: Enable. Otherwise: Disable.
                 BANK0_START..=0x1FFF => self.ramg = val == 0x0A,
                 // ROM bank select
-                0x2000..=0x2FFF => self.romb0 = val,
+                0x2000..=0x2FFF => {
+                    self.romb = (self.romb&0x100) | val as u16;
+                    self.romb %= self.rom_bank_n;
+                },
                 // 9th bit of the ROM bank number
-                0x3000..=0x3FFF => self.romb1 = val&1,
+                0x3000..=0x3FFF => {
+                    self.romb = (self.romb&0xFF) | (((val&1) as u16) << 8) as u16;
+                    self.romb %= self.rom_bank_n;
+                },
                 // RAM bank select
-                0x4000..=0x5FFF => self.ramb = val&0x0F,
+                0x4000..=0x5FFF => self.ramb = (val&0x0F) % self.ram_bank_n as u8,
                 // External RAM write
                 EXT_RAM_START..=EXT_RAM_END => if self.ramg {
                     let _addr = self.map_ext_ram_addr(addr);
@@ -145,8 +126,6 @@ impl Cartridge for MBC5 {
         }
         println!();
 
-        println!("\nCGB Flag\t\t: {}", self.cgb_flag);
-        println!("SGB Flag\t\t: {}", self.sgb_flag);
         println!("Cartridge type\t\t: {:?}", self.cartridge_type);
         println!("ROM size\t\t: {} KiB", self.rom_size);
         println!("ROM Banks \t\t: {}", self.rom_bank_n);

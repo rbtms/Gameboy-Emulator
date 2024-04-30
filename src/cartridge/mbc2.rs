@@ -10,13 +10,11 @@ pub struct MBC2 {
     rom                 : Vec<u8>,
     // 32 KiBs, or 4 KiB banks
     builtin_ram         : Vec<u8>,
-    cgb_flag            : bool,
-    sgb_flag            : bool,
     cartridge_type      : CartridgeType,
     rom_size            : u16,
     rom_bank_n          : u8,
     ram_size            : u16,
-    ram_bank_n          : u16,
+    ram_bank_n          : u8,
     mask_rom_version_n  : u8,
     header_checksum     : u8,
     global_checksum     : u16,
@@ -28,32 +26,21 @@ pub struct MBC2 {
 
 impl MBC2 {
     pub fn new(file :&str, rom :Vec<u8>) -> MBC2 {
-        let cartridge_type :CartridgeType = rom[0x147].into();
-        let ram_size = if cartridge_type.has_ram() { [0, 0, 8, 32, 128, 64][rom[0x149] as usize] } else {0};
-        let builtin_ram = vec![0;512]; // 512 bytes regardless of what the cartridge indicates
-
-        /*
-         * Testing
-         */
-        //let mut rom = rom.clone();
-        //let mut v :Vec<u8> = vec![0;16*1024 - rom.len()];
-        //rom.append(&mut v);
-        //let rom_bank_n = 16;
+        let cartridge_type :CartridgeType = rom[CART_HEADER_CART_TYPE].into();
+        let ram_size  = if cartridge_type.has_ram() { [0, 0, 8, 32, 128, 64][rom[CART_HEADER_RAM_SIZE] as usize] } else {0};
 
         return MBC2 {
             file: file.to_string(),
-            cgb_flag            : rom[0x143] == 0xC0,
-            sgb_flag            : rom[0x146] == 0x03,
             cartridge_type,
-            rom_size            : 32 * (1 << rom[0x148]), // In KiB
-            rom_bank_n          : (1 << (rom[0x148]+1)) as u8,
+            rom_size            : 32 * (1 << rom[CART_HEADER_ROM_SIZE]), // In KiB
+            rom_bank_n          : 1 << (rom[CART_HEADER_ROM_SIZE]+1),
             ram_size            : ram_size as u16,
-            ram_bank_n          : (ram_size as u16/8),
-            mask_rom_version_n  : rom[0x14c],
-            header_checksum     : rom[0x14d],
-            global_checksum     : ((rom[0x14e] as u16) << 8) | rom[0x14f] as u16,
+            ram_bank_n          : (ram_size as u8/8),
+            mask_rom_version_n  : rom[CART_HEADER_ROM_VERSION],
+            header_checksum     : rom[CART_HEADER_HEADER_CHECKSUM],
+            global_checksum     : ((rom[CART_HEADER_CHECKSUM_START] as u16) << 8) | rom[CART_HEADER_CHECKSUM_END] as u16,
             rom,
-            builtin_ram,
+            builtin_ram         : vec![0;512],
 
             // MBC registers
             romb : 0x01,  // ROM bank register
@@ -88,7 +75,7 @@ impl Cartridge for MBC2 {
             // ECHO of A000-A1FF 15 times. Sustract 512 (0x200) until it's on normal RAM range.
             0xA200..=0xBFFF => {
                 let mut _addr = addr;
-                while addr > 0xA1FF { _addr -= 512; }
+                while _addr > 0xA1FF { _addr -= 512; }
 
                 return self.read(_addr);
             },
@@ -101,25 +88,25 @@ impl Cartridge for MBC2 {
             // Enable builtin RAM / Select ROM bank. Highest bit decides which.
             BANK0_START..=BANK0_END => {
                 // RAM enable/disable. RAMG is enabled when the last nibble is 0xA
-                if (val>>7)&1 == 0 {
+                if ((val>>7)&1) == 0 {
                     self.ramg = val&0x0F == 0x0A;
                 }
                 // ROM bank select
                 else {
-                    let bank_n = (val&0x0F).max(1); // If it's going to write 0, write 1 instead.
-
-                    self.romb = (bank_n & 0b1111) % self.rom_bank_n as u8; // Only the last 4 bits are used
+                    // If it's going to write 0, write 1 instead.
+                    // Only the last 4 bits are used
+                    self.romb = (val&0x0F).max(1) % self.rom_bank_n;
                 }
             },
             BANK1_START..=BANK1_END => {},
             // Builtin RAM write
             EXT_RAM_START..=0xA1FF => if self.ramg {
-                self.builtin_ram[(addr-EXT_RAM_START) as usize] = val & 0x0F; // Keep only the lower half-byte
+                self.builtin_ram[(addr-EXT_RAM_START) as usize] = val | 0xF0; // Why the MSBs and not LSBs?
             },
             // ECHO of A000-A1FF 15 times. Sustract 512 (0x200) until it's on normal RAM range.
             0xA200..=EXT_RAM_END => {
                 let mut _addr = addr;
-                while addr > 0xA1FF { _addr -= 512; }
+                while _addr > 0xA1FF { _addr -= 512; }
 
                 self.write(_addr, val);
             }
@@ -141,8 +128,6 @@ impl Cartridge for MBC2 {
         }
         println!();
 
-        println!("\nCGB Flag\t\t: {}", self.cgb_flag);
-        println!("SGB Flag\t\t: {}", self.sgb_flag);
         println!("Cartridge type\t\t: {:?}", self.cartridge_type);
         println!("ROM size\t\t: {} KiB", self.rom_size);
         println!("ROM Banks \t\t: {}", self.rom_bank_n);
