@@ -1,6 +1,9 @@
 use std::env;
 use std::collections::HashMap;
 
+use gb::debugger::Debugger;
+
+
 fn parse_args() -> HashMap<&'static str, String> {
     let mut args :Vec<String> = env::args().collect();
 
@@ -18,7 +21,6 @@ fn parse_args() -> HashMap<&'static str, String> {
         args.remove(index);
     }
 
-
     // rom path
     let rom_path = if args.len() > 1 {
         args[1].clone()
@@ -34,13 +36,18 @@ fn parse_args() -> HashMap<&'static str, String> {
 }
 
 fn main() {
-    let args = parse_args();   
+    let args = parse_args();
 
     let mut gbemu = gb::gbemulator::GBEmulator::new(
         &args["rom_path"],
-        args.get("is_debug").unwrap() == "true"
     );
-    
-    gbemu.init();
-    gbemu.run();
+
+    if args.get("is_debug").unwrap() == "true" {
+        let mut debugger = Debugger::new(gbemu);
+        debugger.init();
+        debugger.run();
+    } else {
+        gbemu.init();
+        gbemu.run();   
+    }
 }

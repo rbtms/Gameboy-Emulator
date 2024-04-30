@@ -1,4 +1,5 @@
 use std::io;
+use std::cell::Ref;
 
 use tui::{
     backend::CrosstermBackend,
@@ -65,7 +66,7 @@ fn build_lastinstrs_list(instrs :&Vec<Instruction>) -> List {
 
 
 /* Builds the cpu state widget */
-fn build_cpustate_text<'a>(cpu :&'a CPU, bus :&'a Bus) -> Paragraph<'a> {
+fn build_cpustate_text<'a>(cpu :&'a CPU, bus :&'a Ref<Bus>) -> Paragraph<'a> {
     let int = match cpu.get_pc()-1 {
         0x40 => "VBlank INT",
         0x48 => "STAT   INT",
@@ -119,7 +120,7 @@ fn build_cpustate_text<'a>(cpu :&'a CPU, bus :&'a Bus) -> Paragraph<'a> {
 }
 
 /* Builds the hardware register widget */
-fn build_hwreg_text(bus :&Bus) -> Paragraph {
+fn build_hwreg_text<'a>(bus :&'a Ref<'a, Bus>) -> Paragraph<'a> {
     let text = format!("
     Timer registers
 
@@ -170,12 +171,6 @@ fn build_hwreg_text(bus :&Bus) -> Paragraph {
     return text_state;
 }
 
-#[allow(dead_code)]
-fn main() {
-    println!("AppUI main");
-}
-
-
 pub struct DebuggerTUI {
     terminal :TerminalCrossterm,
     is_done :bool
@@ -200,10 +195,10 @@ impl DebuggerTUI {
         instrs      :&Vec<Instruction>,
         last_instrs :&Vec<Instruction>,
         cpu :&CPU,
-        bus :&Bus
+        bus :&Ref<Bus>
     ) -> u16 {
-        self.render(instrs, last_instrs, cpu, bus);
-        return self.read_input(instrs, last_instrs, cpu, bus);
+        self.render(instrs, last_instrs, cpu, &bus);
+        return self.read_input(instrs, last_instrs, cpu, &bus);
     }
 
     /* Builds and renders all screen widgets */
@@ -211,15 +206,15 @@ impl DebuggerTUI {
         instrs      :&Vec<Instruction>,
         last_instrs :&Vec<Instruction>,
         cpu :&CPU,
-        bus :&Bus
+        bus :&Ref<Bus>
     ) {
         self.terminal.draw( |f| {
             let size = f.size();
 
             let (list_instrs, mut state_instrs) = build_instrs_list(&instrs);
             let list_lastinstrs = build_lastinstrs_list(&last_instrs);
-            let text_state      = build_cpustate_text(cpu, bus);
-            let text_reg        = build_hwreg_text(bus);
+            let text_state = build_cpustate_text(cpu, &bus);
+            let text_reg   = build_hwreg_text(&bus);
             
             f.render_stateful_widget(list_instrs,
                 Rect::new(0, 0, size.width/3, size.height),
@@ -245,7 +240,7 @@ impl DebuggerTUI {
         instrs      :&Vec<Instruction>,
         last_instrs :&Vec<Instruction>,
         cpu :&CPU,
-        bus :&Bus
+        bus :&Ref<Bus>
     ) -> u16 {
         loop {
             match read().expect("Failed to read event") {
@@ -294,7 +289,9 @@ impl DebuggerTUI {
 
         self.terminal.show_cursor().unwrap();
         self.is_done = true;
-
-        panic!(); // TODO: Handle exit
     }
+}
+
+#[allow(dead_code)]
+fn main() {
 }

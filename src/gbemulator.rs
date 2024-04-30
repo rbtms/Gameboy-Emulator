@@ -2,7 +2,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::cpu::CPU;
-use crate::debugger::Debugger;
 use crate::ppu::PPU;
 use crate::apu::APU;
 use crate::bus::Bus;
@@ -17,9 +16,6 @@ use sdl2::keyboard::Keycode;
 mod clock;
 use clock::Clock;
 
-// Global flags
-const IS_DEBUG :bool = false; // Overrides --debug
-
 // Global constants
 const TICKS_PER_FRAME :u32 = 69905; // 4194304 hz / 60fps/s
 
@@ -29,9 +25,6 @@ pub struct GBEmulator {
     bus             : Rc<RefCell<Bus>>,
     joypad          : Rc<RefCell<Joypad>>,
     clock           : Clock,
-
-    debugger        : Debugger,
-    is_debug        : bool,
 
     screen          : Rc<RefCell<Screen>>,
 
@@ -44,7 +37,7 @@ pub struct GBEmulator {
 }
 
 impl GBEmulator {
-    pub fn new(rom_path :&str, is_debug :bool) -> GBEmulator {
+    pub fn new(rom_path :&str) -> GBEmulator {
         let sdl_context = sdl2::init().unwrap();
         let screen = Rc::new(RefCell::new(Screen::new(&sdl_context, rom_path.to_string())));
         let audio = sdl_context.audio().unwrap();
@@ -61,8 +54,6 @@ impl GBEmulator {
             bus             : bus.clone(),
             joypad          : joypad.clone(),
             clock           : Clock::new(),
-            debugger        : Debugger::new(),
-            is_debug        : IS_DEBUG || is_debug,
 
             events: sdl_context.event_pump().unwrap(),
             screen: screen.clone(),
@@ -75,7 +66,8 @@ impl GBEmulator {
         }
     }
 
-    pub fn get_cpu(&mut self) -> &mut CPU { return &mut self.cpu; }
+    pub fn get_cpu(&self) -> &CPU { return &self.cpu; }
+    pub fn get_cpu_mut(&mut self) -> &mut CPU { return &mut self.cpu; }
     pub fn get_bus(&self) -> Rc<RefCell<Bus>> { return self.bus.clone(); }
     pub fn get_screen(&self) -> Rc<RefCell<Screen>> { return self.screen.clone(); }
     pub fn is_quit(&self) -> bool { return self.is_quit; }
@@ -84,13 +76,6 @@ impl GBEmulator {
         self.cpu.init();
         self.bus.borrow_mut().init();
         self.screen.borrow_mut().init();
-    }
-
-    pub fn try_update_debugger(&mut self) {
-        if self.is_debug
-        && self.cpu.is_new_instr() {
-            self.debugger.update(&self.cpu, &self.bus.borrow());
-        }
     }
 
     pub fn handle_reload(&mut self) {
@@ -102,10 +87,6 @@ impl GBEmulator {
         // Initialize stuff
         self.screen.borrow_mut().init();
 
-        if self.is_debug {
-            self.debugger.init();
-        }
-
         // Main loop
         while !self.is_quit {
             self.run_frame();
@@ -113,10 +94,6 @@ impl GBEmulator {
 
         // TODO: Reenable
         self.bus.borrow().save_ram();
-
-        if self.is_debug {
-            self.debugger.close_ui();
-        }
     }
 
     pub fn run_frame(&mut self) {
@@ -128,7 +105,6 @@ impl GBEmulator {
         self.screen.borrow_mut().set_title_fps(fps);
 
         for _ in 0..TICKS_PER_FRAME {
-            self.try_update_debugger();
             self.bus.borrow_mut().tick();
             self.cpu.tick();
         }

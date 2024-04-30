@@ -1,9 +1,9 @@
 use std::fmt;
 use std::collections::HashMap;
 
-use crate::cpu::CPU;
-use crate::bus::Bus;
 use crate::consts::*;
+use crate::gbemulator::GBEmulator;
+use crate::cpu::CPU;
 
 mod instrs;
 mod tui;
@@ -57,6 +57,7 @@ impl fmt::Display for Instruction {
 }
 
 pub struct Debugger {
+    gbemu               :GBEmulator,
     tui                 :DebuggerTUI,       // TUI object
     instrs              :Vec<Instruction>,  // Instruction dissasembled in the last cycle
     last_instrs         :Vec<Instruction>,  // Last executed instructions
@@ -69,9 +70,10 @@ pub struct Debugger {
 }
 
 impl Debugger {
-    pub fn new() -> Debugger {
+    pub fn new(gbemu :GBEmulator) -> Debugger {
         return Debugger {
-            tui                 :DebuggerTUI::new(),
+            gbemu               : gbemu,
+            tui                 : DebuggerTUI::new(),
             instrs              : vec![],
             last_instrs         : vec![],
             wait_instr_n        : 0,
@@ -84,15 +86,27 @@ impl Debugger {
     }
 
     /* Initialize the TUI */
-    pub fn init(&mut self) { self.tui.initialize(); }
+    pub fn init(&mut self) {
+        self.gbemu.init();
+        self.tui.initialize();
+    }
 
     /* Close the TUI */
     pub fn close_ui(&mut self) { self.tui.close(); }
 
-    /* Returns whether the UI has finished running TODO: remove? */
-    pub fn is_done(&self) -> bool { return self.tui.is_done();  }
 
-    /* Convert two u8 to u16. Utility function. TODO: Move to another package. */
+    pub fn run(&mut self) {
+        while !self.tui.is_done() {
+            self.gbemu.get_bus().borrow_mut().tick();
+            self.gbemu.get_cpu_mut().tick();
+
+            if self.gbemu.get_cpu().is_new_instr() {
+                self.update();
+            }
+        }
+    }
+
+    /* Convert two u8 to u16. Utility function. */
     fn to_u16(&self, hi :u8, lo :u8) -> u16 {
         return ((hi as u16) << 8) | (lo as u16);
     }
@@ -110,14 +124,14 @@ impl Debugger {
     }
 
     /* Returns whether it has reached a breakpoint */
-    pub fn has_reached_breakpoint(&mut self, cpu :&CPU) -> bool {
+    pub fn has_reached_breakpoint(&mut self) -> bool {
         if self.has_breakpoint_addr {
-            if cpu.get_pc()-1 == self.breakpoint_addr {
+            if self.gbemu.get_cpu().get_pc()-1 == self.breakpoint_addr {
                 self.has_breakpoint_addr = false;
             } 
         }
         if self.has_breakpoint_op {
-            if cpu.get_opcode() == self.breakpoint_op {
+            if self.gbemu.get_cpu().get_opcode() == self.breakpoint_op {
                 self.has_breakpoint_op = false;
             }
         }
@@ -126,19 +140,23 @@ impl Debugger {
     }
 
     /* Update the debugger state and render the TUI */
-    pub fn update(&mut self, cpu :&CPU, bus :&Bus) {
+    pub fn update(&mut self) {
         // If it has a breakpoint, check if it has reached it
-        if !self.has_reached_breakpoint(cpu) {
+        if !self.has_reached_breakpoint() {
             return;
         }
 
         // Dont update the UI for n instructions
         if self.wait_instr_n == 0 {
-            self.dissasemble(cpu, bus);
+            self.dissasemble();
+
+            let bus = self.gbemu.get_bus();
+            let bus = bus.borrow();
+            let cpu :&CPU = self.gbemu.get_cpu();
 
             self.wait_instr_n = self.tui.update(
                 &self.instrs, &self.last_instrs,
-                cpu, bus
+                &cpu,  &bus
             );
         } else {
             self.wait_instr_n -= 1;
@@ -146,7 +164,10 @@ impl Debugger {
     }
 
     /* Replace instruction text variables like {n} or {nn} */
-    pub fn replace_variables(&self, s :String, pc :u16, bus :&Bus) -> String {
+    pub fn replace_variables(&self, s :String, pc :u16) -> String {
+        let bus = self.gbemu.get_bus();
+        let bus = bus.borrow();
+
         // Replace n
         let mut s = s.replace("{n}", &format!("{:02X}h",
             bus.read(pc+1)
@@ -175,10 +196,14 @@ impl Debugger {
     }
    
     /* Dissasemble ROM instructions */
-    pub fn dissasemble(&mut self, cpu :&CPU, bus :&Bus) {
-        let mut pc :u16 = cpu.get_pc() - if cpu.get_opcode() == 0xcb {1} else {1};
+    pub fn dissasemble(&mut self) {
+        let bus = self.gbemu.get_bus();
+        let bus = bus.borrow();
+
+        // 1/1? Is this a bug?
+        let mut pc :u16 = self.gbemu.get_cpu().get_pc() - if self.gbemu.get_cpu().get_opcode() == 0xcb {1} else {1};
         self.instrs = vec![];
-                                                                 
+
         while pc < 0xffff-2 {
             let opcode = bus.read(pc) as u16;
             
@@ -190,7 +215,7 @@ impl Debugger {
             };
 
             // cb-prefixed opcodes dont have replacements
-            text = self.replace_variables(text, pc, bus);
+            text = self.replace_variables(text, pc);
 
             // Build the instruction
             let instr = Instruction::new(
@@ -199,9 +224,9 @@ impl Debugger {
                 &text
             );
 
-            // Push the new instruction if the vector is empty and its not the same
+            // Push the new instruction if the vector is empty or its not the same
             // as the last one
-            if instr.get_pos() == cpu.get_pc()-1 {
+            if instr.get_pos() == pc-1 {
                 if self.last_instrs.len() == 0
                 || self.last_instrs.last().unwrap().get_pos() != instr.get_pos() {
                     self.last_instrs.push(instr.clone());
@@ -219,7 +244,9 @@ impl Debugger {
     }
 
     /* Print some CPU state. Its old but sometimes useful */
-    pub fn print_state(&self, cpu :&CPU) {
+    pub fn print_state(&self) {
+        let cpu :&CPU = self.gbemu.get_cpu();
+
         println!("
 +-----------+
 | CPU State |
@@ -237,7 +264,7 @@ impl Debugger {
        F : 0x{:02X}    C : 0x{:02X}    E : 0x{:02X}    L : 0x{:02X}  
                                                                    
   Hardware Registers                                                
-      DIV : 0x{:02X}  TIMA : 0X{:02X}  TMA : 0x{:02X}  TAC : 0x{:02x}                  
+      DIV : 0x{:02X}  TIMA : 0X{:02X}  TMA : 0x{:02X}  TAC : 0x{:02x}
 
 ",
     cpu.get_pc(), cpu.get_sp(), cpu.read(ADDR_IE), cpu.read(ADDR_IF), cpu.get_ime(),

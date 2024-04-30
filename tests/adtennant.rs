@@ -160,7 +160,7 @@ mod tests {
             
             gbemu.init();
             let bus = gbemu.get_bus();
-            let mut cpu = gbemu.get_cpu();
+            let mut cpu = gbemu.get_cpu_mut();
             cpu.init();
 
             init_test(&test, &mut cpu);
@@ -185,7 +185,7 @@ mod tests {
     fn test_ops() {
         // IMPORTANT: To pass this test, there is need to have unbounded access to RAM,
         // that is, to use a mock RAM in the Bus instead of the usual methods.
-        let mut gbemu = GBEmulator::new(TEST_ROM_PATH, false);
+        let mut gbemu = GBEmulator::new(TEST_ROM_PATH);
 
         let tests = [
             "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0a", "0b", "0c", "0d", "0e", "0f",
@@ -217,7 +217,7 @@ mod tests {
 
     #[test]
     fn test_ops_cb() {
-        let mut gbemu = GBEmulator::new(TEST_ROM_PATH, false);
+        let mut gbemu = GBEmulator::new(TEST_ROM_PATH);
         
         println!("Testing cb");
         run_test(format!("{}/cb.json", JSON_PATH), &mut gbemu);
