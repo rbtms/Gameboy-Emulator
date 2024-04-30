@@ -6,9 +6,9 @@ use crate::bus::Bus;
 use crate::consts::*;
 
 mod instrs;
-mod ui;
+mod tui;
 
-use ui::DebuggerTUI;
+use self::tui::DebuggerTUI;
 
 const IO_ADDR_TEXT :[(u16, &str);55] = [
     (0xFF00, "P1"),     (0xFF01, "SB"),    (0xFF02, "SC"),
@@ -57,7 +57,7 @@ impl fmt::Display for Instruction {
 }
 
 pub struct Debugger {
-    ui                  :DebuggerTUI,       // TUI object
+    tui                 :DebuggerTUI,       // TUI object
     instrs              :Vec<Instruction>,  // Instruction dissasembled in the last cycle
     last_instrs         :Vec<Instruction>,  // Last executed instructions
     wait_instr_n        :u16,               // Wait for n instructions to update the TUI
@@ -65,13 +65,13 @@ pub struct Debugger {
     has_breakpoint_op   :bool,              // Whether it has a breakpoint opcode to start
     breakpoint_addr     :u16,               // The breakpoint address to start
     breakpoint_op       :u8,                // The breakpoint opcode to start
-    io_table :HashMap<u16, &'static str>,
+    io_table            :HashMap<u16, &'static str>,
 }
 
 impl Debugger {
     pub fn new() -> Debugger {
         return Debugger {
-            ui :DebuggerTUI::new(),
+            tui                 :DebuggerTUI::new(),
             instrs              : vec![],
             last_instrs         : vec![],
             wait_instr_n        : 0,
@@ -84,19 +84,18 @@ impl Debugger {
     }
 
     /* Initialize the TUI */
-    pub fn init(&mut self) { self.ui.initialize(); }
+    pub fn init(&mut self) { self.tui.initialize(); }
 
     /* Close the TUI */
-    pub fn close_ui(&mut self) { self.ui.close(); }
+    pub fn close_ui(&mut self) { self.tui.close(); }
 
     /* Returns whether the UI has finished running TODO: remove? */
-    pub fn is_done(&self) -> bool { return self.ui.is_done();  }
+    pub fn is_done(&self) -> bool { return self.tui.is_done();  }
 
     /* Convert two u8 to u16. Utility function. TODO: Move to another package. */
     fn to_u16(&self, hi :u8, lo :u8) -> u16 {
         return ((hi as u16) << 8) | (lo as u16);
     }
-
 
     /* Set a breakpoint address */
     pub fn set_breakpoint_addr(&mut self, addr :u16) {
@@ -137,7 +136,7 @@ impl Debugger {
         if self.wait_instr_n == 0 {
             self.dissasemble(cpu, bus);
 
-            self.wait_instr_n = self.ui.update(
+            self.wait_instr_n = self.tui.update(
                 &self.instrs, &self.last_instrs,
                 cpu, bus
             );

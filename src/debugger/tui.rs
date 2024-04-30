@@ -170,6 +170,11 @@ fn build_hwreg_text(bus :&Bus) -> Paragraph {
     return text_state;
 }
 
+#[allow(dead_code)]
+fn main() {
+    println!("AppUI main");
+}
+
 
 pub struct DebuggerTUI {
     terminal :TerminalCrossterm,
@@ -292,9 +297,4 @@ impl DebuggerTUI {
 
         panic!(); // TODO: Handle exit
     }
-}
-
-#[allow(dead_code)]
-fn main() {
-    println!("AppUI main");
 }

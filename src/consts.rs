@@ -32,6 +32,20 @@ pub enum Interrupt {
 
 pub const REG_N :u8 = 8;
 
+pub const CART_HEADER_TITLE_START         :usize = 0x134;
+pub const CART_HEADER_TITLE_END           :usize = 0x143;
+pub const CART_HEADER_MANUF_CODE_START    :usize = 0x13F;
+pub const CART_HEADER_MANUF_CODE_END      :usize = 0x142;
+pub const CART_HEADER_LICENSE_CODE_START  :usize = 0x144;
+pub const CART_HEADER_LICENSE_CODE_END    :usize = 0x145;
+pub const CART_HEADER_CART_TYPE           :usize = 0x147;
+pub const CART_HEADER_ROM_SIZE            :usize = 0x148;
+pub const CART_HEADER_RAM_SIZE            :usize = 0x149;
+pub const CART_HEADER_ROM_VERSION         :usize = 0x14C;
+pub const CART_HEADER_HEADER_CHECKSUM     :usize = 0x14D;
+pub const CART_HEADER_CHECKSUM_START      :usize = 0x14E;
+pub const CART_HEADER_CHECKSUM_END        :usize = 0x14F;
+
 pub const ADDR_P1    :u16 = 0xFF00; pub const ADDR_SB    :u16 = 0xFF01; pub const ADDR_SC    :u16 = 0xFF02;
 pub const ADDR_DIV   :u16 = 0xFF04; pub const ADDR_TIMA  :u16 = 0xFF05; pub const ADDR_TMA   :u16 = 0xFF06;
 pub const ADDR_TAC   :u16 = 0xFF07; pub const ADDR_IF    :u16 = 0xFF0F; pub const ADDR_NR10  :u16 = 0xFF10;
