@@ -3,6 +3,11 @@
 use crate::consts::*;
 use crate::cartridge::{CartridgeType, Cartridge};
 
+
+const ROM_BANK_SIZE :u16 = 0x4000;
+const RAM_BANK_SIZE :u16 = 0x2000;
+
+
 pub struct MBC5 {
     file                : String,
     rom                 : Vec<u8>,
@@ -20,10 +25,10 @@ pub struct MBC5 {
     global_checksum     : u16,
 
     // MBC registers
-    enable_ext_ram      : bool,
-    reg_bank1           : u16,
-    reg_bank2           : u8,
-    selected_mode       : u8
+    ramg  : bool, // RAM gate register / RAM enable/disable
+    romb0 : u8,
+    romb1 : u8,
+    ramb  : u8, // RAM Bank
 }
 
 impl MBC5 {
@@ -57,24 +62,27 @@ impl MBC5 {
             ext_ram,
 
             // MBC registers
-            reg_bank1           : 0x01,
-            reg_bank2           : 0x00,
-            enable_ext_ram      : false,
-            selected_mode       : 0
+            romb0 : 0x01,
+            romb1 : 0x00,
+            ramg  : false,
+            ramb  : 0,
         }
     }
 
-    pub fn map_bank0_addr(&self, addr :u16)   -> u32 {
-        return addr as u32;
+    pub fn map_bank1_addr(&self, addr :u16) -> usize {
+        let bank_n = ((self.romb1 as u16) << 8) | (self.romb0 as u16);
+        let bank_n = bank_n % self.rom_bank_n;
+
+        let base_addr = (addr - BANK1_START) as u32;
+        let offset = (ROM_BANK_SIZE as u32) * (bank_n as u32);
+
+        return (base_addr + offset) as usize;
     }
-    pub fn map_bank1_addr(&self, addr :u16)   -> u32 {
-        //let bank_n = if self.selected_mode == 0 {self.reg_bank1 as u16} else { ((self.reg_bank2 as u16) << 5) | self.reg_bank1 };
-        let bank_n = self.reg_bank1;
-        return (addr - BANK1_START) as u32 + 0x4000*bank_n as u32;
-    }
-    pub fn map_ext_ram_addr(&self, addr :u16) -> u16 {
-        let bank_i = if self.selected_mode == 0 {0} else {self.reg_bank2};
-        return addr - EXT_RAM_START + 0x2000*bank_i as u16;
+    pub fn map_ext_ram_addr(&self, addr :u16) -> usize {
+        let base_addr = addr - EXT_RAM_START;
+        let offset    = RAM_BANK_SIZE * self.ramb as u16;
+
+        return (base_addr + offset) as usize;
     }
 }
 
@@ -87,13 +95,13 @@ impl Cartridge for MBC5 {
 
     fn read(&self, addr :u16) -> u8 {
         return match addr {
-            BANK0_START..=BANK0_END => self.rom[self.map_bank0_addr(addr) as usize],
+            BANK0_START..=BANK0_END => self.rom[addr as usize],
             BANK1_START..=BANK1_END => self.rom[self.map_bank1_addr(addr) as usize],
             // TODO: Check that RAM is enabled
             EXT_RAM_START..=EXT_RAM_END => if self.cartridge_type.has_ram()
                                            && self.ram_size > 0
-                                           && self.enable_ext_ram {
-                self.ext_ram[self.map_ext_ram_addr(addr) as usize]
+                                           && self.ramg {
+                self.ext_ram[self.map_ext_ram_addr(addr)]
             } else {
                 0xFF
             }
@@ -105,35 +113,16 @@ impl Cartridge for MBC5 {
         if self.cartridge_type.mbc_n() == 1 {
             match addr {
                 // External RAM enable/disable
-                // Lower 4 bits are A: Enable. Otherwise: Disable.
-                0x0000..=0x1FFF => self.enable_ext_ram = (val&0x0F) == 0x0A,
+                // 0A: Enable. Otherwise: Disable.
+                BANK0_START..=0x1FFF => self.ramg = val == 0x0A,
                 // ROM bank select
-                0x2000..=0x3FFF => {
-                    // Only the 5 lower bits are taken. If val > number of banks, its masked by the
-                    // corresponding number of bits from the bank number
-                    let mut bank_n = (val&0x1f) as u16 % self.rom_bank_n;
-                    if bank_n == 0x00 || bank_n == 0x20 || bank_n == 0x40 || bank_n == 0x60 { bank_n += 1; }
-
-                    self.reg_bank1 = bank_n as u16;
-                },
-                // RAM bank select / 2 upper bits of BANK1 select
-                0x4000..=0x5FFF => if self.enable_ext_ram {
-                    if self.ram_size > 8 || self.rom_size >= 1024 {
-                        if val > 3 { panic!("write(); Invalid ram bank: {}", val); }
-                        self.reg_bank2 = val; // 00~11
-                    }
-                },
-                // Mode select
-                0x6000..=0x7FFF => {
-                    // If the ROM <= 512 KiB or RAM <= 8 KiB, this register has no observable
-                    // effects
-                    if self.ram_size > 8 || self.rom_size > 512 {
-                        if val > 1 { panic!("write(); Invalid mode") }
-                        self.selected_mode = val;
-                    }
-                }
+                0x2000..=0x2FFF => self.romb0 = val,
+                // 9th bit of the ROM bank number
+                0x3000..=0x3FFF => self.romb1 = val&1,
+                // RAM bank select
+                0x4000..=0x5FFF => self.ramb = val&0x0F,
                 // External RAM write
-                0xA000..=0xBFFF => if self.enable_ext_ram {
+                EXT_RAM_START..=EXT_RAM_END => if self.ramg {
                     let _addr = self.map_ext_ram_addr(addr);
                     self.ext_ram[_addr as usize] = val;
                 },

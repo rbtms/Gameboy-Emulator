@@ -253,7 +253,6 @@ mod tests {
     #[test]
     pub fn mbc2_rom_512kb() { test_rom("../emulator-only/mbc2/rom_512kb.gb"); }
 
-    /*
     // Currently returning "Not Supported"
     #[test]
     pub fn mbc5_rom_16mb() { test_rom("../emulator-only/mbc5/rom_16Mb.gb"); }
@@ -271,7 +270,6 @@ mod tests {
     pub fn mbc5_rom_64mb() { test_rom("../emulator-only/mbc5/rom_64Mb.gb"); }
     #[test]
     pub fn mbc5_rom_8mb() { test_rom("../emulator-only/mbc5/rom_8Mb.gb"); }
-    */
 
 }
 

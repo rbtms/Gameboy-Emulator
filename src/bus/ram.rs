@@ -1,7 +1,7 @@
 use crate::consts::*;
 
 pub struct RAM {
-    work_ram : [RAMVAL;(WORK_RAM_END-WORK_RAM_START+1) as usize],
+    wram : [RAMVAL;(WORK_RAM_END-WORK_RAM_START+1) as usize],
     hram     : [RAMVAL;(HRAM_END-HRAM_START+1) as usize],
     io_reg   : [RAMVAL;(IO_REG_END-IO_REG_START+1) as usize]
 }
@@ -9,9 +9,9 @@ pub struct RAM {
 impl RAM {
     pub fn new() -> RAM {
         return RAM {
-            work_ram : [0;(WORK_RAM_END-WORK_RAM_START+1) as usize],
-            hram     : [0;(HRAM_END-HRAM_START+1) as usize],
-            io_reg   : [0;(IO_REG_END-IO_REG_START+1) as usize]
+            wram   : [0;(WORK_RAM_END-WORK_RAM_START+1) as usize],
+            hram   : [0;(HRAM_END-HRAM_START+1) as usize],
+            io_reg : [0;(IO_REG_END-IO_REG_START+1) as usize]
         }
     }
     
@@ -61,9 +61,9 @@ impl RAM {
 
     pub fn read(&self, addr :RAMINDEX) -> RAMVAL {
         return match addr {
-            WORK_RAM_START..=WORK_RAM_END => self.work_ram[(addr-WORK_RAM_START) as usize],
+            WORK_RAM_START..=WORK_RAM_END => self.wram[(addr-WORK_RAM_START) as usize],
             // Its mapped to work ram
-            ECHO_RAM_START..=ECHO_RAM_END => self.work_ram[(addr-0x2000-WORK_RAM_START) as usize],
+            ECHO_RAM_START..=ECHO_RAM_END => self.wram[(addr-0x2000-WORK_RAM_START) as usize],
             IO_REG_START..=IO_REG_END     => self.read_io(addr),
             HRAM_START..=HRAM_END         => self.hram[(addr-HRAM_START) as usize],
             _ => panic!("read(): Invalid address: 0x{:04X}", addr)
@@ -72,11 +72,9 @@ impl RAM {
 
     pub fn write(&mut self, addr :RAMINDEX, val :RAMVAL) {
         return match addr {
-            WORK_RAM_START..=WORK_RAM_END => self.work_ram[(addr-WORK_RAM_START) as usize] = val,
+            WORK_RAM_START..=WORK_RAM_END => self.wram[(addr-WORK_RAM_START) as usize] = val,
             // Its mapped to work ram
-            ECHO_RAM_START..=ECHO_RAM_END => self.work_ram[(addr-0x2000-WORK_RAM_START) as usize] = val,
-            // Not usable
-            0xFEA0..=0xFEFF               => {},
+            ECHO_RAM_START..=ECHO_RAM_END => self.wram[(addr-0x2000-WORK_RAM_START) as usize] = val,
             IO_REG_START..=IO_REG_END     => self.io_reg[(addr-IO_REG_START) as usize] = val,
             HRAM_START..=HRAM_END         => self.hram[(addr-HRAM_START) as usize] = val,
             _ => panic!("write(): Invalid address: 0x{:04X}", addr)

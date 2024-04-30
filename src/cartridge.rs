@@ -110,7 +110,7 @@ pub fn load_cartridge(path :&str) -> Box<dyn Cartridge> {
         1 => Box::new(mbc1::MBC1::new(&file, rom)),
         2 => Box::new(mbc2::MBC2::new(&file, rom)),
         3 => Box::new(mbc3::MBC3::new(&file, rom)),
-        //5 => Box::new(mbc5::MBC5::new(&file, rom)),
+        5 => Box::new(mbc5::MBC5::new(&file, rom)),
         255 => Box::new(mbc_test::MBCTest::new(&file)),
         _ => panic!("MBC type not supported: {:?}", cartridge_type)
     }
