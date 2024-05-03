@@ -71,7 +71,7 @@ impl Cartridge for MBC5 {
     fn read(&self, addr :u16) -> u8 {
         return match addr {
             BANK0_START..=BANK0_END => self.rom[addr as usize],
-            BANK1_START..=BANK1_END => self.rom[self.map_bank1_addr(addr) as usize],
+            BANK1_START..=BANK1_END => self.rom[self.map_bank1_addr(addr)],
             // TODO: Check that RAM is enabled
             EXT_RAM_START..=EXT_RAM_END => if self.cartridge_type.has_ram()
                                            && self.ram_size > 0
@@ -97,7 +97,7 @@ impl Cartridge for MBC5 {
                 },
                 // 9th bit of the ROM bank number
                 0x3000..=0x3FFF => {
-                    self.romb = (self.romb&0xFF) | (((val&1) as u16) << 8) as u16;
+                    self.romb = (self.romb&0xFF) | (((val&1) as u16) << 8);
                     self.romb %= self.rom_bank_n;
                 },
                 // RAM bank select
@@ -105,7 +105,7 @@ impl Cartridge for MBC5 {
                 // External RAM write
                 EXT_RAM_START..=EXT_RAM_END => if self.ramg {
                     let _addr = self.map_ext_ram_addr(addr);
-                    self.ext_ram[_addr as usize] = val;
+                    self.ext_ram[_addr] = val;
                 },
                 _ => panic!("write(): Invalid address: {:04X}", addr)
             }

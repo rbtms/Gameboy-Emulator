@@ -1,5 +1,5 @@
 use std::fmt;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 use crate::consts::*;
 use crate::gbemulator::GBEmulator;
@@ -60,7 +60,7 @@ pub struct Debugger {
     gbemu               :GBEmulator,
     tui                 :DebuggerTUI,       // TUI object
     instrs              :Vec<Instruction>,  // Instruction dissasembled in the last cycle
-    last_instrs         :Vec<Instruction>,  // Last executed instructions
+    last_instrs         :VecDeque<Instruction>,  // Last executed instructions
     wait_instr_n        :u16,               // Wait for n instructions to update the TUI
     has_breakpoint_addr :bool,              // Whether it has a breakpoint address to start
     has_breakpoint_op   :bool,              // Whether it has a breakpoint opcode to start
@@ -72,10 +72,10 @@ pub struct Debugger {
 impl Debugger {
     pub fn new(gbemu :GBEmulator) -> Debugger {
         return Debugger {
-            gbemu               : gbemu,
+            gbemu,
             tui                 : DebuggerTUI::new(),
             instrs              : vec![],
-            last_instrs         : vec![],
+            last_instrs         : VecDeque::with_capacity(100),
             wait_instr_n        : 0,
             has_breakpoint_addr : false,
             has_breakpoint_op   : false,
@@ -90,10 +90,6 @@ impl Debugger {
         self.gbemu.init();
         self.tui.initialize();
     }
-
-    /* Close the TUI */
-    pub fn close_ui(&mut self) { self.tui.close(); }
-
 
     pub fn run(&mut self) {
         while !self.tui.is_done() {
@@ -125,15 +121,13 @@ impl Debugger {
 
     /* Returns whether it has reached a breakpoint */
     pub fn has_reached_breakpoint(&mut self) -> bool {
-        if self.has_breakpoint_addr {
-            if self.gbemu.get_cpu().get_pc()-1 == self.breakpoint_addr {
-                self.has_breakpoint_addr = false;
-            } 
+        // Check for a breakpoint address
+        if self.has_breakpoint_addr && self.gbemu.get_cpu().get_pc()-1 == self.breakpoint_addr {
+            self.has_breakpoint_addr = false;
         }
-        if self.has_breakpoint_op {
-            if self.gbemu.get_cpu().get_opcode() == self.breakpoint_op {
-                self.has_breakpoint_op = false;
-            }
+        // Check for a breakpoint opcode
+        if self.has_breakpoint_op && self.gbemu.get_cpu().get_opcode() == self.breakpoint_op {
+            self.has_breakpoint_op = false;
         }
 
         return !self.has_breakpoint_addr && !self.has_breakpoint_op;
@@ -146,7 +140,7 @@ impl Debugger {
             return;
         }
 
-        // Dont update the UI for n instructions
+        // Dont update the UI for n M-Cycles depending on user input
         if self.wait_instr_n == 0 {
             self.dissasemble();
 
@@ -156,7 +150,7 @@ impl Debugger {
 
             self.wait_instr_n = self.tui.update(
                 &self.instrs, &self.last_instrs,
-                &cpu,  &bus
+                cpu,  &bus
             );
         } else {
             self.wait_instr_n -= 1;
@@ -191,7 +185,7 @@ impl Debugger {
                 &tmp
             });
         }
-
+ 
         return s;
     }
    
@@ -200,11 +194,14 @@ impl Debugger {
         let bus = self.gbemu.get_bus();
         let bus = bus.borrow();
 
-        // 1/1? Is this a bug?
+        // TODO: 1/1? Is this a bug?
         let mut pc :u16 = self.gbemu.get_cpu().get_pc() - if self.gbemu.get_cpu().get_opcode() == 0xcb {1} else {1};
         self.instrs = vec![];
+        let actual_pc = pc;
 
-        while pc < 0xffff-2 {
+        // Parse the next 200 bytes, which is enough even considering that
+        // the next 100 instructions are 0xCB prefixed
+        while pc < (actual_pc+200).min(0xffff-2) {
             let opcode = bus.read(pc) as u16;
             
             // Fetch opcode
@@ -224,12 +221,12 @@ impl Debugger {
                 &text
             );
 
-            // Push the new instruction if the vector is empty or its not the same
-            // as the last one
-            if instr.get_pos() == pc-1 {
-                if self.last_instrs.len() == 0
-                || self.last_instrs.last().unwrap().get_pos() != instr.get_pos() {
-                    self.last_instrs.push(instr.clone());
+            // Add only the actual instruction
+            if instr.get_pos() == actual_pc {
+                self.last_instrs.push_front(instr.clone());
+            
+                if self.last_instrs.len() > 100 {
+                    self.last_instrs.pop_back();
                 }
             }
 
@@ -241,36 +238,5 @@ impl Debugger {
             else if opcode == 0xcb { pc += 2; }
             else { pc += OP_BYTE_LEN[opcode as usize] as u16; }
         }
-    }
-
-    /* Print some CPU state. Its old but sometimes useful */
-    pub fn print_state(&self) {
-        let cpu :&CPU = self.gbemu.get_cpu();
-
-        println!("
-+-----------+
-| CPU State |
-+-----------+
-
-  PC : {:04X}                                                       
-  SP : {:04X}                                                       
-  IE : {:08b}                                                       
-  IF : {:08b} (IME {})                                              
-                                                                   
-  is_wait : {}                                                      
-                                                                   
-  CPU Registers:                                                    
-       A : 0x{:02X}    B : 0x{:02X}    D : 0x{:02X}    H : 0x{:02X}  
-       F : 0x{:02X}    C : 0x{:02X}    E : 0x{:02X}    L : 0x{:02X}  
-                                                                   
-  Hardware Registers                                                
-      DIV : 0x{:02X}  TIMA : 0X{:02X}  TMA : 0x{:02X}  TAC : 0x{:02x}
-
-",
-    cpu.get_pc(), cpu.get_sp(), cpu.read(ADDR_IE), cpu.read(ADDR_IF), cpu.get_ime(),
-    cpu.is_wait(),
-    cpu.reg(REG_A), cpu.reg(REG_B), cpu.reg(REG_D), cpu.reg(REG_H),
-    cpu.reg(REG_F), cpu.reg(REG_C), cpu.reg(REG_E), cpu.reg(REG_L),
-    cpu.read(ADDR_DIV), cpu.read(ADDR_TIMA), cpu.read(ADDR_TMA), cpu.read(ADDR_TAC));
     }
 }

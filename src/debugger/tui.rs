@@ -1,4 +1,4 @@
-use std::io;
+use std::{collections::VecDeque, io};
 use std::cell::Ref;
 
 use tui::{
@@ -44,9 +44,8 @@ fn build_instrs_list(instrs :&Vec<Instruction>) -> (List, ListState) {
 }
 
 /* Builds the last executed instructions widget */
-fn build_lastinstrs_list(instrs :&Vec<Instruction>) -> List {
-    let mut instrs = instrs.clone();
-    instrs.reverse();
+fn build_lastinstrs_list(instrs :&VecDeque<Instruction>) -> List {
+    let instrs = instrs.clone();
 
     let list_items = instrs
         .iter()
@@ -193,28 +192,28 @@ impl DebuggerTUI {
     /* Render screen and read user input */
     pub fn update(&mut self,
         instrs      :&Vec<Instruction>,
-        last_instrs :&Vec<Instruction>,
+        last_instrs :&VecDeque<Instruction>,
         cpu :&CPU,
         bus :&Ref<Bus>
     ) -> u16 {
-        self.render(instrs, last_instrs, cpu, &bus);
-        return self.read_input(instrs, last_instrs, cpu, &bus);
+        self.render(instrs, last_instrs, cpu, bus);
+        return self.read_input(instrs, last_instrs, cpu, bus);
     }
 
     /* Builds and renders all screen widgets */
     pub fn render(&mut self,
         instrs      :&Vec<Instruction>,
-        last_instrs :&Vec<Instruction>,
+        last_instrs :&VecDeque<Instruction>,
         cpu :&CPU,
         bus :&Ref<Bus>
     ) {
         self.terminal.draw( |f| {
             let size = f.size();
 
-            let (list_instrs, mut state_instrs) = build_instrs_list(&instrs);
-            let list_lastinstrs = build_lastinstrs_list(&last_instrs);
-            let text_state = build_cpustate_text(cpu, &bus);
-            let text_reg   = build_hwreg_text(&bus);
+            let (list_instrs, mut state_instrs) = build_instrs_list(instrs);
+            let list_lastinstrs = build_lastinstrs_list(last_instrs);
+            let text_state = build_cpustate_text(cpu, bus);
+            let text_reg   = build_hwreg_text(bus);
             
             f.render_stateful_widget(list_instrs,
                 Rect::new(0, 0, size.width/3, size.height),
@@ -238,7 +237,7 @@ impl DebuggerTUI {
      */
     pub fn read_input(&mut self,
         instrs      :&Vec<Instruction>,
-        last_instrs :&Vec<Instruction>,
+        last_instrs :&VecDeque<Instruction>,
         cpu :&CPU,
         bus :&Ref<Bus>
     ) -> u16 {

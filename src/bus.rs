@@ -200,28 +200,26 @@ impl Bus {
                 self.ppu.set_oam_dma(true);
                 self.dma_until_next_m_cycle = 1; // Wait until next M-cycle
             }
-        } else {
-            if self.is_oam_dma {
-                self.dma_until_next_m_cycle -= 1;
+        } else if self.is_oam_dma {
+            self.dma_until_next_m_cycle -= 1;
 
-                if self.dma_until_next_m_cycle == 0 {
-                    //println!("dma move");
+            if self.dma_until_next_m_cycle == 0 {
+                //println!("dma move");
 
-                    self.is_oam_dma = false; // Deactivate momentarily to be able to read
-                    let val = self.read(self.dma_src_addr);
-                    self.is_oam_dma = true; // Enable it again so that the cpu can only access HRAM
+                self.is_oam_dma = false; // Deactivate momentarily to be able to read
+                let val = self.read(self.dma_src_addr);
+                self.is_oam_dma = true; // Enable it again so that the cpu can only access HRAM
 
-                    self.ppu.write_oam_dma(self.dma_dst_addr, val);
-                    self.dma_src_addr += 1;
-                    self.dma_dst_addr += 1;
-                    self.dma_until_next_m_cycle = 4;
+                self.ppu.write_oam_dma(self.dma_dst_addr, val);
+                self.dma_src_addr += 1;
+                self.dma_dst_addr += 1;
+                self.dma_until_next_m_cycle = 4;
 
-                    // The last OAM address is 
-                    if self.dma_dst_addr == OAM_END+1 {
-                        //println!("dma end");
-                        self.is_oam_dma = false;
-                        self.ppu.set_oam_dma(false);
-                    }
+                // The last OAM address is 
+                if self.dma_dst_addr == OAM_END+1 {
+                    //println!("dma end");
+                    self.is_oam_dma = false;
+                    self.ppu.set_oam_dma(false);
                 }
             }
         }

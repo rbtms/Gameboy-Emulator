@@ -687,14 +687,14 @@ impl CPU {
             0xfb => self.ei(),                          // enable interrupts
 
             /* rst */
-            0xc7 => self.rst(0x00),                     // PC = 0x00
-            0xcf => self.rst(0x08),                     // PC = 0x08
-            0xd7 => self.rst(0x10),                     // PC = 0x10
-            0xdf => self.rst(0x18),                     // PC = 0x18
-            0xe7 => self.rst(0x20),                     // PC = 0x20
-            0xef => self.rst(0x28),                     // PC = 0x28
-            0xf7 => self.rst(0x30),                     // PC = 0x30
-            0xff => self.rst(0x38),                     // PC = 0x38
+            0xc7 => self.rst(0x00),                // PC = 0x00
+            0xcf => self.rst(0x08),                // PC = 0x08
+            0xd7 => self.rst(0x10),                // PC = 0x10
+            0xdf => self.rst(0x18),                // PC = 0x18
+            0xe7 => self.rst(0x20),                // PC = 0x20
+            0xef => self.rst(0x28),                // PC = 0x28
+            0xf7 => self.rst(0x30),                // PC = 0x30
+            0xff => self.rst(0x38),                // PC = 0x38
 
             /* undefined opcodes */
             0xd3 => self.op_undefined(0xd3),
@@ -715,6 +715,7 @@ impl CPU {
         self.t_cycle += 1; // Update the actual cycle n;
         self.is_instr_done = false;
 
+        // Why % and not == 4 ?
         if self.t_cycle%4 == 0 {
             self.t_cycle = 0;
 
@@ -762,20 +763,19 @@ impl CPU {
         if self.int.borrow().has_interrupts() {
             let interrupt_opt = self.int.borrow().get_interrupt();
 
-            match interrupt_opt {
-                Some(interrupt) => {
-                    let addr = self.int.borrow().get_jmp_address(&interrupt);
-                    //println!("[interrupt] {:?} {:04x} pc {:04x} sp {:04x}", &interrupt, addr, self.pc, self.sp);
-                    self.int.borrow_mut().disable_interrupt_request(&interrupt);
+            // If it's not None
+            if let Some(interrupt) = interrupt_opt {
+                let addr = self.int.borrow().get_jmp_address(&interrupt);
+                //println!("[interrupt] {:?} {:04x} pc {:04x} sp {:04x}", &interrupt, addr, self.pc, self.sp);
+                self.int.borrow_mut().disable_interrupt_request(&interrupt);
 
-                    self.is_transfer_control_interrupt = true;
-                    self.transfer_control_addr = addr;
+                self.is_transfer_control_interrupt = true;
+                self.transfer_control_addr = addr;
 
-                    self.pc -= 1;
-                    self.is_cb_opcode          = false;
-                    self.has_fetched_cb_opcode = false;
-                },
-                None => {}
+                self.pc -= 1; // TODO: Why?
+                // TODO: Why?
+                self.is_cb_opcode          = false;
+                self.has_fetched_cb_opcode = false;
             }
         }
     }

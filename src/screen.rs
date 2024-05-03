@@ -13,7 +13,7 @@ fn parse_arg_mult() -> u16 {
 
     for arg in args.iter() {
         if arg.contains("--mult") {
-            return arg.split_once("=").unwrap().1.parse().unwrap();
+            return arg.split_once('=').unwrap().1.parse().unwrap();
         }
     }
 
@@ -72,9 +72,9 @@ impl Screen {
 
     pub fn get_pixel_color_index(&self, pixel :Pixel, bgp :u8, obp0 :u8, obp1 :u8) -> u8 {
         return match pixel.get_palette() {
-            BGP  => (bgp>>2*(pixel.get_id()))&3,
-            OBP0 => (obp0>>2*(pixel.get_id()))&3,
-            OBP1 => (obp1>>2*(pixel.get_id()))&3
+            BGP  => (bgp  >> (2*(pixel.get_id())))&3,
+            OBP0 => (obp0 >> (2*(pixel.get_id())))&3,
+            OBP1 => (obp1 >> (2*(pixel.get_id())))&3
         }
     }
 
@@ -98,7 +98,7 @@ impl Screen {
         // Temporary linebuffer to prevent drawing if there is no change
         let mut tmp_linebuffer :[u8;SCREEN_WIDTH as usize] = [0;SCREEN_WIDTH as usize];
 
-        for x in 0..SCREEN_WIDTH as u16 {
+        for x in 0..SCREEN_WIDTH {
             let x_mult = self.screen_mult*x;
             let y_mult = self.screen_mult*y as u16;
             let id = self.get_pixel_color_index(linebuffer[x as usize], bgp, obp0, obp1);

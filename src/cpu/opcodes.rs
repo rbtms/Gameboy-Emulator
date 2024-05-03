@@ -351,7 +351,7 @@ impl CPU {
             },
             2 => { // set hi, internal
                 let sp_hi = ((self.sp>>8) as u8).wrapping_add(self.cache[0]) as u16; // add carry
-                self.sp = (self.sp & 0x00ff) | (sp_hi << 8) as u16;
+                self.sp = (self.sp & 0x00ff) | (sp_hi << 8);
                 self.prefetch_opcode();
             },
             _ => panic!()
@@ -389,7 +389,7 @@ impl CPU {
             },
             2 => { // set hi
                 let sp_hi = ((self.sp>>8) as u8).wrapping_sub(self.cache[0]) as u16; // add carry
-                self.sp = (self.sp & 0x00ff) | (sp_hi << 8) as u16;
+                self.sp = (self.sp & 0x00ff) | (sp_hi << 8);
 
                 self.prefetch_opcode();
             },
@@ -645,7 +645,7 @@ impl CPU {
 
             },
             2 => { // write H
-                let sp_hi = self.upper(self.sp) as u8;
+                let sp_hi = self.upper(self.sp);
 
                 let (h1, c1) = self.reg(REG_H).overflowing_add(sp_hi);
                 let (h2, c2) = h1.overflowing_add(self.cache[0]);
@@ -1152,7 +1152,7 @@ impl CPU {
         match self.instr_m_cycle {
             1 => {
                 let a = self.reg(REG_A);
-                let new_a = ((a << 1) & 0xff) | self.flag_c(); // carry
+                let new_a = (a << 1) | self.flag_c(); // carry
 
                 self.set_reg(REG_A, new_a);
                 self.set_flags(
@@ -1173,7 +1173,7 @@ impl CPU {
         match self.instr_m_cycle {
             1 => {
                 let val = self.reg(r);
-                let new_val = ((val << 1) & 0xff) | self.flag_c(); // carry
+                let new_val = (val << 1) | self.flag_c(); // carry
 
                 self.set_reg(r, new_val);
                 self.set_flags(
@@ -1200,7 +1200,7 @@ impl CPU {
             2 => {
                 let hl = self.cache16[0];
                 let val = self.cache[0];
-                let new_val = ((val << 1) & 0xff) | self.flag_c(); // carry
+                let new_val = (val << 1) | self.flag_c(); // carry
 
                 self.write(hl, new_val);
                 self.set_flags(
@@ -1221,7 +1221,7 @@ impl CPU {
         match self.instr_m_cycle {
             1 => {
                 let val = self.reg(REG_A);
-                let new_val :REG = ((val << 1) & 0xff) | ((val >> 7) & 1);
+                let new_val :REG = (val << 1) | ((val >> 7) & 1);
 
                 self.set_reg(REG_A, new_val);
                 self.set_flags(
@@ -1243,7 +1243,7 @@ impl CPU {
         match self.instr_m_cycle {
             1 => {
                 let val = self.reg(r);
-                let new_val :REG = ((val << 1) & 0xff) | ((val >> 7) & 1);
+                let new_val :REG = (val << 1) | ((val >> 7) & 1);
 
                 self.set_reg(r, new_val);
                 self.set_flags(
@@ -1277,7 +1277,7 @@ impl CPU {
                     (new_hl == 0) as u8,    // z = 1 if result is 0
                     0,                      // n = reset
                     0,                      // h = reset
-                    ((val >> 7) & 1) as u8  // c = bit 7 of A before rotating
+                    (val >> 7) & 1          // c = bit 7 of A before rotating
                 );
             },
             3 => self.prefetch_opcode(),

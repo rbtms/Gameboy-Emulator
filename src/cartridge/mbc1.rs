@@ -146,7 +146,7 @@ impl Cartridge for MBC1 {
             // External RAM write
             0xA000..=0xBFFF => if self.ramg && self.cartridge_type.has_ram() && self.ram_size > 0 {
                     let _addr = self.map_ext_ram_addr(addr);
-                    self.ext_ram[_addr as usize] = val;
+                    self.ext_ram[_addr] = val;
             },
             _ => panic!("write(): Invalid address: {:04X}", addr)
         }

@@ -255,7 +255,7 @@ impl PPU {
 
     fn set_mode(&mut self, mode :STATMode) {
         let mode_n = mode as u8;
-        self.stat = (self.stat & 0xFC) | (mode_n as u8);
+        self.stat = (self.stat & 0xFC) | mode_n;
 
         // Set STAT interrupt source
         // Bit 3: Mode 0, Bit 4: Mode 1, Bit 5: Mode 2, Bit 6: LCY=LY
@@ -299,10 +299,8 @@ impl PPU {
                     self.set_mode(STATMode::Drawing);
 
                     // Enable drawing the window this line
-                    if self.wy < 143 && self.wx < 166 && self.ly >= self.wy {
-                        if self.is_window_enabled() {
-                            self.is_window_enable = true;
-                        }
+                    if self.wy < 143 && self.wx < 166 && self.ly >= self.wy && self.is_window_enabled() {
+                        self.is_window_enable = true;
                     }
 
                     self.render_scanline();
@@ -329,9 +327,10 @@ impl PPU {
         // VRAM address of the tile
         return if tile_data_area {
             ADDR_VRAM_0 + TILE_VRAM_SIZE*tile_i
+        } else if tile_i < 128 {
+            ADDR_VRAM_2 + tile_i*TILE_VRAM_SIZE
         } else {
-            if tile_i < 128 { ADDR_VRAM_2 + tile_i*TILE_VRAM_SIZE }
-            else            { ADDR_VRAM_2 + (tile_i-128)*TILE_VRAM_SIZE - 128*TILE_VRAM_SIZE }
+            ADDR_VRAM_2 + (tile_i-128)*TILE_VRAM_SIZE - 128*TILE_VRAM_SIZE
         };
     }
 
@@ -357,8 +356,8 @@ impl PPU {
             let tile_i    = self.get_bg_tilemap_addr(y_tile, x_tile);
             let addr_vram = self.get_tile_vram_addr(tile_i);
 
-            let byte_lo = self.vram(addr_vram + 2*tile_line_y as u16);
-            let byte_hi = self.vram(addr_vram + 2*tile_line_y as u16 + 1);
+            let byte_lo = self.vram(addr_vram + 2*tile_line_y);
+            let byte_hi = self.vram(addr_vram + 2*tile_line_y + 1);
 
             let limit = if x == self.scx {8-(self.scx%8)} else {8};
             for b_i in (0..limit).rev() {
@@ -444,12 +443,8 @@ impl PPU {
         // Draw over the linebuffer
         for i in 0..SCREEN_WIDTH as usize {
             // Dont draw transparent pixels
-            if buf[i].color_id != 0 {
-                if self.linebuffer[i].color_id == 0x00
-                // BG over OBJ flag
-                || !buf[i].bg_over_obj {
-                    self.linebuffer[i] = Pixel { color_id: buf[i].color_id, palette: buf[i].palette };
-                }
+            if buf[i].color_id != 0 && (self.linebuffer[i].color_id == 0x00 || !buf[i].bg_over_obj) {
+                self.linebuffer[i] = Pixel { color_id: buf[i].color_id, palette: buf[i].palette };
             }
         }
     }
@@ -467,23 +462,21 @@ impl PPU {
                 if y <= self.ly+16 && (self.ly+16)-y < 8 && self.line_objs.len() < 10 {
                     self.line_objs.push((y, x, tile_index, attrs));
                 }
-            } else {
-                if y <= self.ly+16 && (self.ly+16)-y < 16 && self.line_objs.len() < 10 {
-                    let y_flip = self.is_set(attrs, 6);
-                    tile_index &= 0xFE; // Ignore LSB
+            } else if y <= self.ly+16 && (self.ly+16)-y < 16 && self.line_objs.len() < 10 {
+                let y_flip = self.is_set(attrs, 6);
+                tile_index &= 0xFE; // Ignore LSB
 
-                    // 1st object
-                    if (self.ly+16) - y < 8 {
-                        if y_flip { tile_index += 1; }  // 1st object and y_flip => 2nd object with y_flip
-                    // 2nd object
-                    } else {
-                        y += 8;
-                        if !y_flip { tile_index += 1; } // 2nd object and y_flip => 1st object with y_flip
-                    }
-                    
-                    // Ignore last bit
-                    self.line_objs.push((y, x, tile_index, attrs));
+                // 1st object
+                if (self.ly+16) - y < 8 {
+                    if y_flip { tile_index += 1; }  // 1st object and y_flip => 2nd object with y_flip
+                // 2nd object
+                } else {
+                    y += 8;
+                    if !y_flip { tile_index += 1; } // 2nd object and y_flip => 1st object with y_flip
                 }
+                
+                // Ignore last bit
+                self.line_objs.push((y, x, tile_index, attrs));
             }
         }
     }
