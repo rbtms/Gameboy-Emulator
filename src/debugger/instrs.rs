@@ -412,7 +412,7 @@ impl Debugger {
                 if lo == 0x06 || lo == 0x0e { // HL
                     match opcode_cb {
                         0x40..=0x7f => return format!("TEST (HL) {}", b), // test bit b of (HL)
-                        0x80..=0xbf => return format!("RST  (HL) {}", b), // reset bit b of (HL)
+                        0x80..=0xbf => return format!("RES  (HL) {}", b), // reset bit b of (HL)
                         0xc0..=0xff => return format!("SET  (HL) {}", b), // set bit b of (HL)
                         _ => panic!("0xcb bit/set/res HL: Invalid range: 0x{:x}", opcode_cb)
                     }
@@ -431,7 +431,7 @@ impl Debugger {
 
                     match opcode_cb {
                         0x40..=0x7f => return format!("TEST {} {}", r, b), // test bit b of r
-                        0x80..=0xbf => return format!("RST  {} {}", r, b), // reset bit b of r
+                        0x80..=0xbf => return format!("RES  {} {}", r, b), // reset bit b of r
                         0xc0..=0xff => return format!("SET  {} {}", r, b), // set bit b of r
                         _ => panic!("0xcb bit/set/res: Invalid range: 0x{:x}", opcode_cb)
                     }
