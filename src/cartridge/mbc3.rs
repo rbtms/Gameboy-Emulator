@@ -89,6 +89,8 @@ impl MBC3 {
 }
 
 impl Cartridge for MBC3 {
+    fn is_test_cart(&self) -> bool { return false; }
+
     fn init(&mut self) {
         if self.cartridge_type.has_ram() && self.ram_size > 0 {
             self.load_ram();

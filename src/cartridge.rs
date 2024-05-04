@@ -100,6 +100,8 @@ pub trait Cartridge {
     fn load_ram(&mut self);
     fn save_ram(&self);
     fn print_rom_data(&self);
+
+    fn is_test_cart(&self) -> bool; // For tests. Remove.
 }
 
 pub fn load_cartridge(path :&str) -> Box<dyn Cartridge> {
@@ -113,7 +115,7 @@ pub fn load_cartridge(path :&str) -> Box<dyn Cartridge> {
         2 => Box::new(mbc2::MBC2::new(file, rom)),
         3 => Box::new(mbc3::MBC3::new(file, rom)),
         5 => Box::new(mbc5::MBC5::new(file, rom)),
-        255 => Box::new(mbc_test::MBCTest::new(file)),
+        255 => Box::new(mbc_test::MBCTest::new(file, rom)),
         _ => panic!("MBC type not supported: {:?}", cartridge_type)
     }
 }

@@ -10,10 +10,10 @@ pub struct MBCTest {
 }
 
 impl MBCTest {
-    pub fn new(file :&str) -> MBCTest {
+    pub fn new(file :&str, rom :Vec<u8>) -> MBCTest {
         return MBCTest {
             file: file.to_string(),
-            rom: vec![0; 0x10000]
+            rom: rom
         }
     }
 }
@@ -21,8 +21,10 @@ impl MBCTest {
 impl Cartridge for MBCTest {
     fn init(&mut self) {
         // TODO: Disable on debug
-        //self.print_rom_data();
+        self.print_rom_data();
     }
+
+    fn is_test_cart(&self) -> bool { return true; }
 
     fn read(&self, addr :u16) -> u8 {
         return self.rom[addr as usize];

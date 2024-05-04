@@ -57,6 +57,8 @@ impl MBC2 {
 }
 
 impl Cartridge for MBC2 {
+    fn is_test_cart(&self) -> bool { return false; }
+
     fn init(&mut self) {
         // TODO: load RAM
         // TODO: Disable on debug

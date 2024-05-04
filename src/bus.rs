@@ -74,7 +74,9 @@ impl Bus {
     }
 
     pub fn read(&self, addr :u16) -> u8 {
-        // return self.cart.read(addr); // For adtennant tests. Remove.
+        if self.cart.is_test_cart() {
+            return self.cart.read(addr); // For tests. Remove.
+        }
 
         if self.is_oam_dma {
             return self.read_oam_dma(addr);
@@ -127,7 +129,9 @@ impl Bus {
     }
 
     pub fn write(&mut self, addr :u16, val :u8) {
-        // return self.cart.write(addr, val); // For adtennant tests. Remove.
+        if self.cart.is_test_cart() {
+            return self.cart.write(addr, val); // For tests. Remove.
+        }
 
         // Intercept DMA address to start OAM DMA
         if addr == ADDR_DMA {
