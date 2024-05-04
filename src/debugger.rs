@@ -10,6 +10,8 @@ mod tui;
 
 use self::tui::DebuggerTUI;
 
+// TODO: After a jump it should not sustract from the PC
+
 const IO_ADDR_TEXT :[(u16, &str);55] = [
     (0xFF00, "P1"),     (0xFF01, "SB"),    (0xFF02, "SC"),
     (0xFF04, "DIV"),    (0xFF05, "TIMA"),  (0xFF06, "TMA"),
@@ -70,16 +72,16 @@ pub struct Debugger {
 }
 
 impl Debugger {
-    pub fn new(gbemu :GBEmulator) -> Debugger {
+    pub fn new(gbemu :GBEmulator, has_breakpoint :bool, breakpoint_addr :u16) -> Debugger {
         return Debugger {
             gbemu,
             tui                 : DebuggerTUI::new(),
             instrs              : vec![],
             last_instrs         : VecDeque::with_capacity(100),
             wait_instr_n        : 0,
-            has_breakpoint_addr : false,
+            has_breakpoint_addr : has_breakpoint,
             has_breakpoint_op   : false,
-            breakpoint_addr     : 0x0000,
+            breakpoint_addr     : breakpoint_addr,
             breakpoint_op       : 0x00,
             io_table :HashMap::from(IO_ADDR_TEXT),
         }
@@ -93,12 +95,15 @@ impl Debugger {
 
     pub fn run(&mut self) {
         while !self.tui.is_done() {
-            self.gbemu.get_bus().borrow_mut().tick();
-            self.gbemu.get_cpu_mut().tick();
+            // TODO: Remove
+            if self.gbemu.get_cpu().get_pc() > 0xFFF0 { self.tui.close(); println!("end"); return; }
 
             if self.gbemu.get_cpu().is_new_instr() {
                 self.update();
             }
+
+            self.gbemu.get_bus().borrow_mut().tick();
+            self.gbemu.get_cpu_mut().tick();
         }
     }
 
@@ -193,15 +198,25 @@ impl Debugger {
     pub fn dissasemble(&mut self) {
         let bus = self.gbemu.get_bus();
         let bus = bus.borrow();
+        self.instrs = vec![];
 
         // TODO: 1/1? Is this a bug?
-        let mut pc :u16 = self.gbemu.get_cpu().get_pc() - if self.gbemu.get_cpu().get_opcode() == 0xcb {1} else {1};
-        self.instrs = vec![];
+        // TODO: Why is this needed?
+        let mut pc :u16 = if self.gbemu.get_cpu().get_pc() == 0 {
+            0
+        } else {
+            self.gbemu.get_cpu().get_pc() - if self.gbemu.get_cpu().get_opcode() == 0xcb {
+                1
+            } else {
+                1
+            }
+        };
+        
         let actual_pc = pc;
 
         // Parse the next 200 bytes, which is enough even considering that
         // the next 100 instructions are 0xCB prefixed
-        while pc < (actual_pc+200).min(0xffff-2) {
+        while pc < 0xffff && pc-actual_pc < 200 {
             let opcode = bus.read(pc) as u16;
             
             // Fetch opcode

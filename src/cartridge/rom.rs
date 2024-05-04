@@ -39,6 +39,8 @@ impl ROM {
 }
 
 impl Cartridge for ROM {
+    fn is_test_cart(&self) -> bool { return false; }
+
     fn init(&mut self) {
         // TODO: Disable on debug
         self.print_rom_data();

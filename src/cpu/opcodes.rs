@@ -90,7 +90,7 @@ impl CPU {
         }
     }
 
-    // (nn) <- sp
+    // (nn, nn+1) <- sp
     pub fn ld_nn_sp(&mut self) {
         match self.instr_m_cycle {
             1 => self.cache[0] = self.fetch(), // lo

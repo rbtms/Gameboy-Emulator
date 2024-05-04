@@ -66,7 +66,17 @@ fn build_lastinstrs_list(instrs :&VecDeque<Instruction>) -> List {
 
 /* Builds the cpu state widget */
 fn build_cpustate_text<'a>(cpu :&'a CPU, bus :&'a Ref<Bus>) -> Paragraph<'a> {
-    let int = match cpu.get_pc()-1 {
+    let pc :u16 = if cpu.get_pc() == 0 {
+        0
+    } else {
+        cpu.get_pc() - if cpu.get_opcode() == 0xcb {
+            1
+        } else {
+            1
+        }
+    };
+
+    let int = match pc {
         0x40 => "VBlank INT",
         0x48 => "STAT   INT",
         0x50 => "Timer  INT",
@@ -78,9 +88,19 @@ fn build_cpustate_text<'a>(cpu :&'a CPU, bus :&'a Ref<Bus>) -> Paragraph<'a> {
     let timer_freq = [1024, 16, 64, 256][(bus.read(ADDR_TAC) & 3) as usize];
     let is_timer_enabled = (bus.read(ADDR_TAC) >> 2) & 1 == 1;
 
+    let pc :u16 = if cpu.get_pc() == 0 {
+        0
+    } else {
+        cpu.get_pc()- if cpu.get_opcode() == 0xcb {
+            1
+        } else {
+            1
+        }
+    };
+
     let text = format!("
     PC {:04X}
-    SP {:04X}
+    SP {:04X} ({:04X})
 
     A  {:02X}   F  {:02X}   AF {:04X}
     B  {:02X}   C  {:02X}   BC {:04X}
@@ -95,7 +115,7 @@ fn build_cpustate_text<'a>(cpu :&'a CPU, bus :&'a Ref<Bus>) -> Paragraph<'a> {
     timer {}/{}  {}
     div   {:04X}
 
-    ", cpu.get_pc()-1,      cpu.get_sp(),
+    ", pc,                  cpu.get_sp(),           ((cpu.read(cpu.get_sp()+1) as u16)<<8) | cpu.read(cpu.get_sp()) as u16,
        cpu.reg(REG_A),      cpu.reg(REG_F),         cpu.reg16(REG_A, REG_F),
        cpu.reg(REG_B),      cpu.reg(REG_C),         cpu.reg16(REG_B, REG_C),
        cpu.reg(REG_D),      cpu.reg(REG_E),         cpu.reg16(REG_D, REG_E),
@@ -107,7 +127,6 @@ fn build_cpustate_text<'a>(cpu :&'a CPU, bus :&'a Ref<Bus>) -> Paragraph<'a> {
        bus.timer_counter(), timer_freq, if is_timer_enabled {"ON"} else {"OFF"},
        bus.div_counter(),
     );
-
 
     let text_state = Paragraph::new(text)
         .block( Block::default()

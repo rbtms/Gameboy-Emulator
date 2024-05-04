@@ -759,6 +759,10 @@ impl CPU {
         }
     }
 
+    /*
+     Check if there are any interrupts and if so, disable the first available and jump
+     to the corresponding interrupt address
+     */
     pub fn handle_interrupts(&mut self) {
         if self.int.borrow().has_interrupts() {
             let interrupt_opt = self.int.borrow().get_interrupt();
