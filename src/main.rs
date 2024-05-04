@@ -1,10 +1,16 @@
 use std::env;
-use std::collections::HashMap;
 
 use gb::debugger::Debugger;
 
+#[derive(Debug)]
+struct Config {
+    is_debug :bool,
+    has_breakpoint :bool,
+    breakpoint_addr :u16,
+    rom_path :String
+}
 
-fn parse_args() -> HashMap<&'static str, String> {
+fn parse_args() -> Config {
     let mut args :Vec<String> = env::args().collect();
 
     // --debug
@@ -21,6 +27,18 @@ fn parse_args() -> HashMap<&'static str, String> {
         args.remove(index);
     }
 
+    // --debug
+    let has_breakpoint = args.contains(&"--breakpoint".to_string());
+    let mut breakpoint_addr :u16 = 0x0000;
+    if has_breakpoint {
+        let index = args.iter().position(|s| *s == "--breakpoint").unwrap();
+        breakpoint_addr = u16::from_str_radix(&args[index+1].clone(), 16).unwrap();
+     
+        args.remove(index);
+        args.remove(index);
+    }
+
+
     // rom path
     let rom_path = if args.len() > 1 {
         args[1].clone()
@@ -29,21 +47,23 @@ fn parse_args() -> HashMap<&'static str, String> {
             .to_string()
     };
 
-    return HashMap::from([
-        ("rom_path", rom_path),
-        ("is_debug", is_debug.to_string())
-    ]);
+    return Config {
+        rom_path,
+        is_debug,
+        has_breakpoint,
+        breakpoint_addr
+    };
 }
 
 fn main() {
-    let args = parse_args();
+    let config = parse_args();
 
     let mut gbemu = gb::gbemulator::GBEmulator::new(
-        &args["rom_path"],
+        &config.rom_path,
     );
 
-    if args.get("is_debug").unwrap() == "true" {
-        let mut debugger = Debugger::new(gbemu);
+    if config.is_debug {
+        let mut debugger = Debugger::new(gbemu, config.has_breakpoint, config.breakpoint_addr);
         debugger.init();
         debugger.run();
     } else {
