@@ -1,9 +1,15 @@
 use crate::consts::*;
 use crate::cartridge::{CartridgeType, Cartridge};
+use std::io::prelude::Write;
+
+
+const SAVE_PATH :&str = "roms/games/saves";
+
 
 pub struct ROM {
     file                : String,
     rom                 : Vec<u8>,
+    ext_ram             : Vec<u8>,
     cgb_flag            : bool,
     sgb_flag            : bool,
     cartridge_type      : CartridgeType,
@@ -22,7 +28,7 @@ impl ROM {
         let ram_size = if cartridge_type.has_ram() { [0, 0, 8, 32, 128, 64][rom[0x149] as usize] } else {0};
 
         return ROM {
-            file: file.to_string(),
+            file                : file.to_string(),
             cgb_flag            : rom[0x143] == 0xC0,
             sgb_flag            : rom[0x146] == 0x03,
             cartridge_type,
@@ -34,7 +40,13 @@ impl ROM {
             header_checksum     : rom[0x14d],
             global_checksum     : ((rom[0x14e] as u16) << 8) | rom[0x14f] as u16,
             rom,
+            ext_ram             : vec![0;ram_size*1024],
         }
+    }
+
+    // Map the ext RAM address to an index of the array where it's stored
+    fn map_ext_ram_addr(&self, addr :u16) -> usize {
+        return (addr - 0xA000) as usize;
     }
 }
 
@@ -50,22 +62,48 @@ impl Cartridge for ROM {
         return match addr {
             BANK0_START..=BANK0_END => self.rom[addr as usize],
             BANK1_START..=BANK1_END => self.rom[addr as usize],
+            0xA000..=0xBFFF => if self.cartridge_type.has_ram()
+                            && self.ram_size > 0 {
+                self.ext_ram[self.map_ext_ram_addr(addr)]
+            } else {
+                0xFF
+            },
             _ => panic!("read(): Invalid address: {:04X}", addr)
         }
     }
 
     fn write(&mut self, addr :u16, val :u8) {
-        if self.cartridge_type.mbc_n() == 1 {
-            match addr {
-                BANK0_START..=BANK0_END => self.rom[addr as usize] = val,
-                BANK1_START..=BANK1_END => self.rom[addr as usize] = val,
-                _ => panic!("write(): Invalid address: {:04X}", addr)
+        match addr {
+            0xA000..=0xBFFF => if self.cartridge_type.has_ram()
+                            && self.ram_size > 0 {
+                let _addr = self.map_ext_ram_addr(addr);
+                self.ext_ram[_addr] = val;
+            },
+            // TODO: Log
+            _ => {}
+        }
+    }
+
+    fn load_ram(&mut self) {
+        if self.cartridge_type.has_ram() && self.ram_size > 0 {
+            let path = format!("{}/{}", SAVE_PATH, self.file);
+            if std::path::Path::new(&path).exists() {
+                let ram = std::fs::read(path).unwrap();
+                self.ext_ram = ram;
             }
         }
     }
 
-    fn load_ram(&mut self) {}
-    fn save_ram(&self) {}
+    fn save_ram(&self) {
+        if self.cartridge_type.has_ram() && self.ram_size > 0 {
+            if self.cartridge_type.has_ram() && self.ram_size > 0 {
+                let path = format!("{}/{}", SAVE_PATH, self.file);
+
+                let mut file = std::fs::File::create(path).unwrap();
+                file.write_all(&self.ext_ram).unwrap();
+            }
+        }
+    }
 
     fn print_rom_data(&self) {
         println!("\nFile:\n{}", self.file);
