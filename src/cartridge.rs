@@ -1,11 +1,11 @@
 use crate::consts::CART_HEADER_CART_TYPE;
 
-mod rom;
+mod noMBC;
 mod mbc1;
 mod mbc2;
 mod mbc3;
 mod mbc5;
-mod mbc_test;
+mod mbcTest;
 
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
@@ -110,12 +110,12 @@ pub fn load_cartridge(path :&str) -> Box<dyn Cartridge> {
     let cartridge_type :CartridgeType = rom[CART_HEADER_CART_TYPE].into();
 
     return match cartridge_type.mbc_n() {
-        0 => Box::new(rom::ROM::new(path, rom)),
+        0 => Box::new(noMBC::NoMBC::new(path, rom)),
         1 => Box::new(mbc1::MBC1::new(file, rom)),
         2 => Box::new(mbc2::MBC2::new(file, rom)),
         3 => Box::new(mbc3::MBC3::new(file, rom)),
         5 => Box::new(mbc5::MBC5::new(file, rom)),
-        255 => Box::new(mbc_test::MBCTest::new(file, rom)),
+        255 => Box::new(mbcTest::MBCTest::new(file, rom)),
         _ => panic!("MBC type not supported: {:?}", cartridge_type)
     }
 }

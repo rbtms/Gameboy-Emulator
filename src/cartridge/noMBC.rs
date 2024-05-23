@@ -6,7 +6,7 @@ use std::io::prelude::Write;
 const SAVE_PATH :&str = "roms/games/saves";
 
 
-pub struct ROM {
+pub struct NoMBC {
     file                : String,
     rom                 : Vec<u8>,
     ext_ram             : Vec<u8>,
@@ -22,12 +22,12 @@ pub struct ROM {
     global_checksum     : u16,
 }
 
-impl ROM {
-    pub fn new(file :&str, rom :Vec<u8>) -> ROM {
+impl NoMBC {
+    pub fn new(file :&str, rom :Vec<u8>) -> NoMBC {
         let cartridge_type :CartridgeType = rom[0x147].into();
         let ram_size = if cartridge_type.has_ram() { [0, 0, 8, 32, 128, 64][rom[0x149] as usize] } else {0};
 
-        return ROM {
+        return NoMBC {
             file                : file.to_string(),
             cgb_flag            : rom[0x143] == 0xC0,
             sgb_flag            : rom[0x146] == 0x03,
@@ -50,7 +50,7 @@ impl ROM {
     }
 }
 
-impl Cartridge for ROM {
+impl Cartridge for NoMBC {
     fn is_test_cart(&self) -> bool { return false; }
 
     fn init(&mut self) {
