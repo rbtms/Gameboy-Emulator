@@ -15,7 +15,6 @@ pub struct CPU {
     opcode                          : u8,                       // Actual opcode
     opcode_cb                       : u8,                       // Actual opcode
     is_cb_opcode                    : bool,
-    has_fetched_cb_opcode           : bool,
 
     is_instr_done                   : bool,
 
@@ -51,7 +50,6 @@ impl CPU {
             bus,
 
             is_cb_opcode          : false,
-            has_fetched_cb_opcode : false,
             is_instr_done         : false,  // Flag to know when to reset instruction
                                             // parameters and update the debugger
             int,
@@ -556,11 +554,6 @@ impl CPU {
                     return;
                 }
 
-                // Flag to prevent interrupts between CB prefixed fetches
-                if !self.has_fetched_cb_opcode {
-                    self.has_fetched_cb_opcode = true;
-                }
-
                 match self.opcode_cb {
                     /* left rotate */
                     0x00 => self.rlc_r(REG_B),          // left rotate B
@@ -751,7 +744,6 @@ impl CPU {
                     self.is_transfer_control_interrupt = false;
                     
                     self.is_cb_opcode          = false;
-                    self.has_fetched_cb_opcode = false;
 
                     self.handle_interrupts();
                 }
@@ -779,7 +771,6 @@ impl CPU {
                 self.pc -= 1; // TODO: Why?
                 // TODO: Why?
                 self.is_cb_opcode          = false;
-                self.has_fetched_cb_opcode = false;
             }
         }
     }
