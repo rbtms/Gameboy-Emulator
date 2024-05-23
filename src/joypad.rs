@@ -4,11 +4,11 @@ use crate::interruptManager::InterruptManager;
 use crate::consts::*;
 
 pub struct Joypad {
-    int    : Rc<RefCell<InterruptManager>>,
-    p1 :u8,
+    int: Rc<RefCell<InterruptManager>>,
+    p1: u8,
     mask: u8,
-    direction :u8,
-    action :u8,
+    direction: u8,
+    action: u8,
 
     is_controller_up: bool,
     is_controller_down: bool,
@@ -128,12 +128,10 @@ impl Joypad {
         let is_direction = (val>>4)&1 == 0;
         let is_action    = (val>>5)&1 == 0;
 
-        let p1 = self.p1;
-
         if is_direction && self.direction == 0b11111111 { self.direction = val; }
         if is_action && self.action == 0b11111111 { self.action = val; }
 
-        if p1 == 0b11111111 {
+        if self.p1 == 0b11111111 {
             self.int.borrow_mut().request_interrupt(Interrupt::Joypad);
         }
     }

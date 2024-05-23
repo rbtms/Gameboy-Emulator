@@ -23,7 +23,7 @@ const ADDR_TILEMAPS_1 :u16 = 0x9C00;
  */
 
 #[derive(PartialEq, Debug)]
-pub enum STATMode {
+enum STATMode {
     HBlank    = 0,
     VBlank    = 1,
     OAMSearch = 2,
@@ -151,10 +151,14 @@ impl PPU {
         return match addr {
             VRAM_START..=VRAM_END => if self.can_access_vram() {
                 self.vram[(addr-VRAM_START) as usize]
-            } else { 0xff },
+            } else {
+                0xff
+            },
             OAM_START..=OAM_END   => if self.can_access_oam()  {
                 self.oam[(addr-OAM_START) as usize]
-            } else { 0xff },
+            } else {
+                0xff
+            },
             ADDR_LY   => self.ly,
             ADDR_LYC  => self.lyc,
             ADDR_WY   => self.wy,
@@ -238,8 +242,9 @@ impl PPU {
             self.stat |= 0x40; // set LY == LYC as the interrupt source
             self.int.borrow_mut().request_interrupt(Interrupt::STAT);
         }
+        // LY != LYC
         else {
-            self.stat &= 0xFF ^ 4; // LY != LYC
+            self.stat &= 0xFF ^ 4;
         }
     }
 
@@ -462,6 +467,7 @@ impl PPU {
                 if y <= self.ly+16 && (self.ly+16)-y < 8 && self.line_objs.len() < 10 {
                     self.line_objs.push((y, x, tile_index, attrs));
                 }
+            // obj size == 16
             } else if y <= self.ly+16 && (self.ly+16)-y < 16 && self.line_objs.len() < 10 {
                 let y_flip = self.is_set(attrs, 6);
                 tile_index &= 0xFE; // Ignore LSB

@@ -93,7 +93,8 @@ impl GBEmulator {
         }
 
         // TODO: Reenable
-        self.bus.borrow().save_ram();
+        // TODO: Why every frame????
+        //self.bus.borrow().save_ram();
     }
 
     pub fn run_frame(&mut self) {
@@ -169,7 +170,6 @@ impl GBEmulator {
                             if      value < -16000 { self.joypad.borrow_mut().controller_up(); }
                             else if value >  16000 { self.joypad.borrow_mut().controller_down(); }
                             else { self.joypad.borrow_mut().controller_no_y(); }
-
                         },
                         _ => {}
                     }

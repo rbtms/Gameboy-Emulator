@@ -35,7 +35,7 @@ pub struct MBC3 {
     reg_bank1           : u16,
     reg_ram_bank        : u8,
     reg_rtc             : u8,
-    ext_selected   : SelectionExternal,
+    ext_selected        : SelectionExternal,
 
     //rtc_secs : u8,
     //rtc_mins : u8,
@@ -69,7 +69,7 @@ impl MBC3 {
             reg_bank1           : 0x01,
             reg_ram_bank        : 0,
             reg_rtc             : 0,
-            ext_selected   : SelectionExternal::ExtRAM,
+            ext_selected        : SelectionExternal::ExtRAM,
             enable_ext_ram      : false,
             enable_rtc          : false,
 

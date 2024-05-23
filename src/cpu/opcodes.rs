@@ -862,7 +862,6 @@ impl CPU {
             2 => self.prefetch_opcode(),
             _ => panic!()
         }
-
     }
 
 
@@ -2040,4 +2039,3 @@ impl CPU {
         }
     }
 }
-
