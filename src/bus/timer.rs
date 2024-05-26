@@ -5,7 +5,7 @@ use crate::interruptManager::InterruptManager;
 use crate::consts::*;
 
 pub struct Timer {
-    timer_counter   :u16,
+    timer_counter: u16,
 
     tma: u8,
     tima: u8,
@@ -13,9 +13,9 @@ pub struct Timer {
     old_tma: u8,
 
     // Request to set TIMA
-    is_wait_set_tima :bool,
-    wait_tima        :u8,
-    int :Rc<RefCell<InterruptManager>>,
+    is_wait_set_tima: bool,
+    wait_tima: u8,
+    int: Rc<RefCell<InterruptManager>>,
 }
 
 impl Timer {
@@ -55,11 +55,6 @@ impl Timer {
             ADDR_TAC => {
                 let prev_mux_output = self.div_mux_output();
                 let prev_enable = self.is_timer_enabled();
-                
-                // TAC value changes
-                if (self.tac&0x03) != (val & 0x03) {
-                    //println!("[TAC Change] {} -> {}", self.tac&3, val & 3); // TODO: Reenable
-                }
 
                 // Falling edge detector
                 self.tac = val;
@@ -69,11 +64,6 @@ impl Timer {
                 if self.is_falling_edge(prev_mux_output, mux_output, prev_enable, enable) {
                     self.inc_tima_falling();
                 }
-
-                /*
-                else if enable && !prev_mux_output && mux_output {
-                    self.inc_tima();
-                }*/
             },
             ADDR_TMA => {
                 self.old_tma = self.tma;
@@ -84,8 +74,6 @@ impl Timer {
                 let prev_mux_output = self.div_mux_output();
                 self.timer_counter = 0;
                 let new_mux_output = self.div_mux_output();
-
-                //self.has_div_been_reset = true;
 
                 // Detect a falling edge
                 if self.is_falling_edge(prev_mux_output, new_mux_output, enable, enable) {
@@ -99,11 +87,11 @@ impl Timer {
         }
     }
 
-    pub fn is_timer_enabled(&self) -> bool {
+    fn is_timer_enabled(&self) -> bool {
         return (self.tac >> 2) & 1 == 1;
     }
 
-    pub fn div_mux_output(&self) -> bool {
+    fn div_mux_output(&self) -> bool {
         return match self.tac & 3 {
             0 => (self.timer_counter >> 9) & 1 == 1,
             1 => (self.timer_counter >> 3) & 1 == 1,
@@ -114,14 +102,14 @@ impl Timer {
     }
 
     /* Detect if the DIV/TAC mux output goes from 1 to 0 */
-    pub fn is_falling_edge(&self,
+    fn is_falling_edge(&self,
         prev_mux_out :bool, mux_out :bool,
         prev_enable  :bool, enable  :bool) -> bool {
             return (prev_enable && prev_mux_out) && !(enable && mux_out);
     }
 
     /* Incrementing tima through natural incrementation triggers strange cycles */
-    pub fn inc_tima(&mut self) {
+    fn inc_tima(&mut self) {
         if self.is_timer_enabled() {
             if self.tima == 0xFF {
                 self.is_wait_set_tima = true;
@@ -134,9 +122,9 @@ impl Timer {
         }
     }
 
-    /* Incrementing tima through the modification of other registers does not trigger strange
-     * cycles */
-    pub fn inc_tima_falling(&mut self) {
+    /* Incrementing tima through the modification of other registers does
+       not trigger strange cycles */
+    fn inc_tima_falling(&mut self) {
         if self.tima == 0xFF {
             self.tima = self.tma;
             self.int.borrow_mut().request_interrupt(Interrupt::Timer);
@@ -168,9 +156,11 @@ impl Timer {
         self.timer_counter = self.timer_counter.wrapping_add(1);
         let new_mux_bit = self.div_mux_output();
 
-        let enable = self.is_timer_enabled();
-
-        if self.is_falling_edge(old_mux_bit, new_mux_bit, enable, enable) {
+        // Increase TIMA
+        if self.is_falling_edge(old_mux_bit,
+                                new_mux_bit,
+                                self.is_timer_enabled(),
+                                self.is_timer_enabled()) {
             self.inc_tima();
         }
     }
