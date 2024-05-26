@@ -120,7 +120,7 @@ impl Bus {
         }
     }
 
-    pub fn write_oam_dma(&mut self, addr :u16, val :u8) {
+    fn write_oam_dma(&mut self, addr :u16, val :u8) {
         match addr {
             HRAM_START..=HRAM_END => self.ram.write(addr, val),
             ADDR_DMA => self.ram.write(addr, val),
@@ -177,7 +177,7 @@ impl Bus {
                 // Timer
                 ADDR_DIV | ADDR_TIMA | ADDR_TMA | ADDR_TAC
                     => self.timer.write(addr, val),
-                // Interrupots
+                    // Interrupots
                 ADDR_IE | ADDR_IF
                     => self.int.borrow_mut().write(addr, val),
                 // General RAM
@@ -191,10 +191,9 @@ impl Bus {
     pub fn tick(&mut self) {
         self.ppu.tick();    // TODO: Possible delay of 1 cycle on OAM DMA
         self.timer.tick();
-        self.apu.tick(self.timer.read(ADDR_DIV));
+        self.apu.tick(self.read(ADDR_DIV));
 
         // Wait for 5 cycles (actual cycle + 1 M-cycle to start OAM-DMA
-        
         if self.schedule_oam_dma {
             self.wait_oam_dma -= 1;
 

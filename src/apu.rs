@@ -6,6 +6,9 @@ mod channel1;
 mod channel2;
 mod channel3;
 mod channel4;
+mod audio;
+
+// TODO: Turning the APU off resets the duty counters
 
 #[allow(dead_code)]
 pub struct APU {
@@ -17,10 +20,13 @@ pub struct APU {
     ch2 :channel2::Channel2,
     ch3 :channel3::Channel3,
     ch4 :channel4::Channel4,
+
+    audio: audio::Audio,
+    n: u16
 }
 
 impl APU {
-    pub fn new(audio :sdl2::AudioSubsystem) -> APU {
+    pub fn new(subsystem :sdl2::AudioSubsystem) -> APU {
         return APU {
             nr50 :0x77, nr51 :0xF3, nr52 :0xF1,
             prev_div_bit: false,
@@ -30,6 +36,9 @@ impl APU {
             ch2: channel2::Channel2::new(),
             ch3: channel3::Channel3::new(),
             ch4: channel4::Channel4::new(),
+
+            audio: audio::Audio::new(subsystem),
+            n: 0
         }
     }
 
@@ -38,6 +47,8 @@ impl APU {
         self.ch2.init();
         self.ch3.init();
         self.ch4.init();
+
+        self.audio.resume();
     }
 
     pub fn read(&self, addr :u16) -> u8 {
@@ -73,36 +84,19 @@ impl APU {
                 ADDR_NR41..=ADDR_NR44 => self.ch4.write(addr, val),
                 WAVE_RAM_START..=WAVE_RAM_END => self.ch3.write(addr, val),
 
-                ADDR_NR50 => {
-                    self.ch1.set_mix(
-                        self.is_bit_set(val, 7), // left
-                        self.is_bit_set(val, 0), // right
-                    );
-
-                    self.ch2.set_mix(
-                        self.is_bit_set(val, 7), // left
-                        self.is_bit_set(val, 0), // right
-                    );
-                    self.nr50 = val;
-                }
-                ADDR_NR51 => {
-                    self.ch1.set_volume((val>>4)&3, val&3); // left, right
-                    self.ch2.set_volume((val>>4)&3, val&3); // left, right
-                    self.ch3.set_volume((val>>4)&3, val&3); // left, right
-                    self.ch4.set_volume((val>>4)&3, val&3); // left, right
-                    self.nr51 = val;
-                },
-                ADDR_NR52 => self.write_nr52(val), // Bits other than 7 are read-only
-
+                ADDR_NR50 => self.nr50 = val,
+                ADDR_NR51 => self.nr51 = val,
+                ADDR_NR52 => self.write_nr52(val),
+                
                 _ => panic!("write(): Invalid address: {:04X}", addr)
             }
         } else {
             // Otherwise only allow R/W of wave ram and NR52
             match addr {
-                ADDR_NR11 => self.ch1.write(addr, val),
+                /*ADDR_NR11 => self.ch1.write(addr, val),
                 ADDR_NR21 => self.ch2.write(addr, val),
                 ADDR_NR31 => self.ch3.write(addr, val),
-                ADDR_NR41 => self.ch4.write(addr, val),
+                ADDR_NR41 => self.ch4.write(addr, val),*/
                 ADDR_NR52 => self.write_nr52(val),
                 WAVE_RAM_START..=WAVE_RAM_END => self.ch3.write(addr, val),
                 _ => {}
@@ -113,11 +107,19 @@ impl APU {
     // Master control
     fn write_nr52(&mut self, val :u8) {
         let prev_enable = self.is_apu_enabled();
-        self.nr52 = (val&0x80) | (self.nr52&0x7F); // Only set the first bit
+        
+        // Only set the first bit
+        self.nr52 = (val&0x80) | (self.nr52&0x7F);
         let enable = self.is_apu_enabled();
+        
+        // Enable the audio if the APU is turned on
+        if !prev_enable && enable {
+            self.audio.resume();
+        }
+        // Clear registers when APU is turned off
+        else if prev_enable && !enable {
+            self.audio.pause();
 
-        // Clear registers when PPU is turned off
-        if prev_enable && !enable {
             self.ch1.turn_off();
             self.ch2.turn_off();
             self.ch3.turn_off();
@@ -153,32 +155,75 @@ impl APU {
 
     /* ------------------------------------------------------------------------------------------ */
 
-    fn inc_ch_length(&mut self) {
-        self.ch1.inc_length();
-        self.ch2.inc_length();
-        self.ch3.inc_length();
-        self.ch4.inc_length();
+    pub fn add_samples(&mut self, n_samples: u16) {
+        // Left audio
+        let left = if self.is_mix_ch1_left() {self.ch1.sample()} else {0}
+            + if self.is_mix_ch2_left() {self.ch2.sample()} else {0}
+            + if self.is_mix_ch3_left() {self.ch3.sample()} else {0}
+            + if self.is_mix_ch4_left() {self.ch4.sample()} else {0};
+
+        // Right audio
+        let right = if self.is_mix_ch1_right() {self.ch1.sample()} else {0}
+            + if self.is_mix_ch2_right() {self.ch2.sample()} else {0}
+            + if self.is_mix_ch3_right() {self.ch3.sample()} else {0}
+            + if self.is_mix_ch4_right() {self.ch4.sample()} else {0};
+
+
+        let left = left.max(0).min(127);
+        let right = right.max(0).min(127);
+
+        self.audio.queue(left, right, n_samples);
     }
 
     pub fn tick(&mut self, div :u8) {
-        self.ch1.tick();
-        self.ch2.tick();
-        self.ch3.tick();
-        self.ch4.tick();
+        //if div%2 == 0 { println!("DIV {} length={} sweep={} envelope={}", div, div%2 == 0, div%4==0, div%8==0); }
 
-        let div_bit = self.is_bit_set(div, 4);
+        if self.is_apu_enabled() {
+            self.ch1.tick();
+            self.ch2.tick();
+            self.ch3.tick();
+            self.ch4.tick();
 
-        if self.prev_div_bit && !div_bit {
-            self.div_apu = self.div_apu.wrapping_add(1);
+            /*
+                A “DIV-APU” counter is increased every time DIV’s bit 4 (5 in double-speed mode) goes from 1 to 0,
+                therefore at a frequency of 512 Hz (regardless of whether double-speed is active).
+                Thus, the counter can be made to increase faster by writing to DIV while its relevant bit is set
+                (which clears DIV, and triggers the falling edge).
+             */
+            let div_bit = self.is_bit_set(div, 4);
 
-            // Sound length event every 2 DIV-APU ticks (256hz)
-            if self.div_apu%2 == 0 { self.inc_ch_length(); }
-            // ch1 frequency sweep event every 4 DIV-APU ticks (128hz)
-            if self.div_apu%4 == 0 { self.ch1.change_sweep(); }
-            // Envelope length event every 8 DIV-APU ticks (64hz)
-            if self.div_apu%8 == 0 { self.ch1.change_envelope(); }
+            if self.prev_div_bit && !div_bit {
+                self.div_apu = (self.div_apu + 1) % 8;
+
+                // Sound length event every 2 DIV-APU ticks (256hz)
+                if self.div_apu%2 == 0 {
+                    self.ch1.inc_length();
+                    self.ch2.inc_length();
+                    self.ch3.inc_length();
+                    self.ch4.inc_length();
+                }
+                // ch1 frequency sweep event every 4 DIV-APU ticks (128hz)
+                if self.div_apu%4 == 0 {
+                    self.ch1.change_sweep();
+                }
+                // Envelope length event every 8 DIV-APU ticks (64hz)
+                if self.div_apu%8 == 0 {
+                    self.ch1.change_envelope();
+                    self.ch2.change_envelope();
+                    self.ch4.change_envelope();
+                }
+            }
+
+            self.prev_div_bit = div_bit;
         }
 
-        self.prev_div_bit = div_bit;
+        
+        // FREQ_CPU/FREQ_AUDIO = 87.38, accounting for both channels = 174.76
+        if self.n == 88 {
+            self.add_samples(4);
+            self.n = 0;
+        } else {
+            self.n += 1;
+        }
     }
 }
