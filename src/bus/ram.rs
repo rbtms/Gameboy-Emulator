@@ -54,7 +54,11 @@ impl RAM {
             0xFF65 | 0xFF66 | 0xFF67 | 0xFF6C | 0xFF6D | 0xFF6E |
             0xFF6F | 0xFF71 | 0xFF72 | 0xFF73 | 0xFF74 | 0xFF75 |
             0xFF76 | 0xFF77 | 0xFF78 | 0xFF79 | 0xFF7A | 0xFF7B |
-            0xFF7C | 0xFF7D | 0xFF7E | 0xFF7F => 0xFF, // 11111111
+            0xFF7C | 0xFF7D | 0xFF7E | 0xFF7F
+            
+            // Other registers
+            | 0xFF2A  | 0xFF2B | 0xFF2C  | 0xFF2D  | 0xFF2E | 0xFF2F
+              => 0xFF, // 11111111
             _ => 0x00 // Otherwise dont OR mask anything
         }
     }
@@ -69,7 +73,7 @@ impl RAM {
             _ => panic!("read(): Invalid address: 0x{:04X}", addr)
         }
     }
-
+    
     pub fn write(&mut self, addr :RAMINDEX, val :RAMVAL) {
         return match addr {
             WORK_RAM_START..=WORK_RAM_END => self.wram[(addr-WORK_RAM_START) as usize] = val,
@@ -80,5 +84,4 @@ impl RAM {
             _ => panic!("write(): Invalid address: 0x{:04X}", addr)
         }
     }
-
 }
