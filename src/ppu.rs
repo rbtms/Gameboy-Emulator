@@ -288,45 +288,6 @@ impl PPU {
     fn are_objs_enabled(&self)      -> bool { return self.is_set(self.ldcd, 1); }
     fn is_bg_window_enabled(&self)  -> bool { return self.is_set(self.ldcd, 0); }
 
-    pub fn tick(&mut self) {
-        if !self.is_lcd_enabled() { return; }
-        // Dot numbers are +1 to prevent off-by-one errors
-        self.current_dot += 1;
-
-        // Vblank: Increase LY every 456 dots
-        if self.ly >= 144 {
-            if self.current_dot == 457 {
-                self.write_ly(self.ly+1);
-            }
-        }
-        else {
-            match self.current_dot {
-                // OAM search: 80 dots
-                1 => {
-                    self.set_mode(STATMode::OAMSearch);
-                    self.oam_search();
-                }
-                // Render OAM and VRAM: 168...291 dots
-                // 168 + 10 per tile in a given line
-                81 => {
-                    self.set_mode(STATMode::Drawing);
-
-                    // Enable drawing the window this line
-                    if self.wy < 143 && self.wx < 166 && self.ly >= self.wy && self.is_window_enabled() {
-                        self.is_window_enable = true;
-                    }
-
-                    self.render_scanline();
-                },
-                // HBlank: 85...208 dots
-                372 => self.set_mode(STATMode::HBlank),
-                // 456: End of scanline
-                457 => self.write_ly(self.ly+1),
-                _ => {}
-            }
-        }
-    }
-
     fn get_bg_tilemap_addr(&self, y :u16, x :u16) -> u16 {
         return self.vram(self.bg_tilemap_area() + y*32 + x) as u16;
     }
@@ -528,6 +489,45 @@ impl PPU {
             }
         } else {
             self.has_drawn_first_frame = false;
+        }
+    }
+
+    pub fn tick(&mut self) {
+        if !self.is_lcd_enabled() { return; }
+        // Dot numbers are +1 to prevent off-by-one errors
+        self.current_dot += 1;
+
+        // Vblank: Increase LY every 456 dots
+        if self.ly >= 144 {
+            if self.current_dot == 457 {
+                self.write_ly(self.ly+1);
+            }
+        }
+        else {
+            match self.current_dot {
+                // OAM search: 80 dots
+                1 => {
+                    self.set_mode(STATMode::OAMSearch);
+                    self.oam_search();
+                }
+                // Render OAM and VRAM: 168...291 dots
+                // 168 + 10 per tile in a given line
+                81 => {
+                    self.set_mode(STATMode::Drawing);
+
+                    // Enable drawing the window this line
+                    if self.wy < 143 && self.wx < 166 && self.ly >= self.wy && self.is_window_enabled() {
+                        self.is_window_enable = true;
+                    }
+
+                    self.render_scanline();
+                },
+                // HBlank: 85...208 dots
+                372 => self.set_mode(STATMode::HBlank),
+                // 456: End of scanline
+                457 => self.write_ly(self.ly+1),
+                _ => {}
+            }
         }
     }
 }
