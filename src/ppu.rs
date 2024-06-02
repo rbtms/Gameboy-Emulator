@@ -180,10 +180,10 @@ impl PPU {
                 self.vram[(addr-VRAM_START) as usize] = val;
             },
             OAM_START..=OAM_END => if self.can_access_oam() {
-                self.oam[(addr-OAM_START) as usize]   = val;
+                self.oam[(addr-OAM_START) as usize] = val;
             },
             ADDR_LY   => { self.write_ly(0); }, // Read only. It resets when its written to
-            ADDR_LYC  => { self.lyc = val; self.check_eq_ly_lyc() },
+            ADDR_LYC  => { self.lyc = val; self.check_eq_ly_lyc(); },
             ADDR_WY   => self.wy  = val,
             ADDR_WX   => self.wx  = val,
             ADDR_SCY  => self.scy = val,
@@ -238,13 +238,14 @@ impl PPU {
     fn check_eq_ly_lyc(&mut self) {
         // STAT interrupt if LY == LYC
         if self.ly == self.lyc {
-            self.stat |= 4; // bit 2 is set when LY == LYC
-            self.stat |= 0x40; // set LY == LYC as the interrupt source
+            self.stat |= 0b00000100; // bit 2 is set when LY == LYC
+            self.stat |= 0b01000000; // set LY == LYC as the interrupt source
             self.int.borrow_mut().request_interrupt(Interrupt::STAT);
         }
         // LY != LYC
         else {
-            self.stat &= 0xFF ^ 4;
+            // Disable flags
+            self.stat &= 0b10111011;
         }
     }
 
@@ -263,9 +264,16 @@ impl PPU {
         self.stat = (self.stat & 0xFC) | mode_n;
 
         // Set STAT interrupt source
-        // Bit 3: Mode 0, Bit 4: Mode 1, Bit 5: Mode 2, Bit 6: LCY=LY
-        if mode_n < 3 {
-            self.stat = (self.stat & 0b10000111) | (1<<(mode_n+3))
+        if mode_n <= 3 {
+            self.stat = (self.stat & 0xFC) | mode_n;
+
+            // Request an interrupt if the mode coincides with the selected interrupt mode
+            // Bit 3: Mode 0, Bit 4: Mode 1, Bit 5: Mode 2, Bit 6: LCY=LY
+            if self.stat & (1<<(mode_n+3)) == 1 {
+                self.int.borrow_mut().request_interrupt(Interrupt::STAT);
+            }
+        } else {
+            panic!("Invalid mode.");
         }
     }
 
@@ -352,7 +360,6 @@ impl PPU {
         // If scx%8 != 0 wait (in this case approximate since its done in one tick) until it
         // discards enough pixels from the leftmost tile TODO: It shows artifacts when
         // approximating it to the right
-        //if self.scx%8 != 0 { self.scx -= self.scx%8; }
         let mut x = self.scx;
 
         // 0..160/8
@@ -394,7 +401,6 @@ impl PPU {
                 let index = wx as u16 + x_off*TILE_W + (7-b_i) as u16;
 
                 if index < SCREEN_WIDTH {
-                    //println!("[win] print {} at y={} x={} bg={:08b}", color_id, self.ly, wx, self.bgp);
                     self.linebuffer[index as usize] = Pixel {color_id, palette: Palette::BGP};
                 }
             }
