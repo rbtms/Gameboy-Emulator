@@ -54,7 +54,7 @@ impl MBC5 {
     }
 
     pub fn map_bank1_addr(&self, addr :u16) -> usize {
-        return ((addr - BANK1_START) + (ROM_BANK_SIZE*self.romb)) as usize;
+        return ((addr - BANK1_START) as u32 + (ROM_BANK_SIZE as u32 * self.romb as u32)) as usize;
     }
     pub fn map_ext_ram_addr(&self, addr :u16) -> usize {
         return ((addr - EXT_RAM_START) + (RAM_BANK_SIZE * self.ramb as u16)) as usize;
@@ -68,6 +68,9 @@ impl Cartridge for MBC5 {
         // TODO: load RAM
         // TODO: Disable on debug
         self.print_rom_data();
+        
+        //self.romb = 2;
+        //println!("addr: {:04X}", self.map_bank1_addr(BANK1_START));
     }
 
     fn read(&self, addr :u16) -> u8 {
@@ -87,30 +90,28 @@ impl Cartridge for MBC5 {
     }
 
     fn write(&mut self, addr :u16, val :u8) {
-        if self.cartridge_type.mbc_n() == 1 {
-            match addr {
-                // External RAM enable/disable
-                // 0A: Enable. Otherwise: Disable.
-                BANK0_START..=0x1FFF => self.ramg = val == 0x0A,
-                // ROM bank select
-                0x2000..=0x2FFF => {
-                    self.romb = (self.romb&0x100) | val as u16;
-                    self.romb %= self.rom_bank_n;
-                },
-                // 9th bit of the ROM bank number
-                0x3000..=0x3FFF => {
-                    self.romb = (self.romb&0xFF) | (((val&1) as u16) << 8);
-                    self.romb %= self.rom_bank_n;
-                },
-                // RAM bank select
-                0x4000..=0x5FFF => self.ramb = (val&0x0F) % self.ram_bank_n as u8,
-                // External RAM write
-                EXT_RAM_START..=EXT_RAM_END => if self.ramg {
-                    let _addr = self.map_ext_ram_addr(addr);
-                    self.ext_ram[_addr] = val;
-                },
-                _ => panic!("write(): Invalid address: {:04X}", addr)
-            }
+        match addr {
+            // External RAM enable/disable
+            // 0A: Enable. Otherwise: Disable.
+            BANK0_START..=0x1FFF => self.ramg = val == 0x0A,
+            // ROM bank select
+            0x2000..=0x2FFF => {
+                self.romb = (self.romb&0x100) | val as u16;
+                self.romb %= self.rom_bank_n;
+            },
+            // 9th bit of the ROM bank number
+            0x3000..=0x3FFF => {
+                self.romb = (self.romb&0xFF) | (((val&1) as u16) << 8);
+                self.romb %= self.rom_bank_n;
+            },
+            // RAM bank select
+            0x4000..=0x5FFF => self.ramb = (val&0x0F) % self.ram_bank_n as u8,
+            // External RAM write
+            EXT_RAM_START..=EXT_RAM_END => if self.ramg {
+                let _addr = self.map_ext_ram_addr(addr);
+                self.ext_ram[_addr] = val;
+            },
+            _ => panic!("write(): Invalid address: {:04X}", addr)
         }
     }
 
