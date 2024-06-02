@@ -516,6 +516,7 @@ impl PPU {
                     self.set_mode(STATMode::Drawing);
 
                     // Enable drawing the window this line
+                    // TODO: Why is wx < 166 and not < 159, given the screen size?
                     if self.wy < 143 && self.wx < 166 && self.ly >= self.wy && self.is_window_enabled() {
                         self.is_window_enable = true;
                     }

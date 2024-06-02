@@ -18,7 +18,6 @@ mod tests {
 
         let screen = gbemu.get_screen();
         
-
         loop {
             gbemu.run_frame();
 

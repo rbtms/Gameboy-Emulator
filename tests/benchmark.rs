@@ -1,7 +1,3 @@
-/*
- * Some tests are commented because they try to access illegal memory addresses
- */
-
 #[cfg(test)]
 mod tests {
     use std::fs;
@@ -16,18 +12,7 @@ mod tests {
         cycles  :u64
     }
 
-    fn avg_instr_time(instr_times :Vec<u128>) -> u128 {
-        let mut avg = 0;
-
-        for i in 1..instr_times.len() {
-            avg += (instr_times[i]-instr_times[i-1])/(instr_times.len() as u128);
-        }
-
-        return avg;
-    }
-
     fn run_benchmark(path :&str) -> BenchmarkResult {            
-        let mut instr_n = 0;
         let mut cycle_n = 0;
 
         let mut gbemu = GBEmulator::new(&path);
@@ -55,7 +40,6 @@ mod tests {
 
             // Add instruction time
             if cpu.is_new_instr() {
-                instr_n += 1;
                 instr_times.push(t_start.elapsed().unwrap().as_nanos());
             }
 
@@ -107,4 +91,3 @@ mod tests {
 
 fn main() {
 }
-
