@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 use crate::consts::*;
+use crate::apu::Channel as Channel;
+
 
 pub struct Channel4 {
     nr41 :u8, nr42 :u8, nr43 :u8, nr44 :u8,
@@ -28,7 +30,6 @@ impl Channel4 {
     }
     
     pub fn init(&mut self) {}
-    pub fn is_enabled(&self) -> bool { self.is_enabled }
     
     pub fn read(&self, addr :u16) -> u8 {
         return match addr {
@@ -103,34 +104,10 @@ impl Channel4 {
     }
 
     pub fn reset_regs(&mut self) {
-        self.nr41 = 0x00; self.nr42 = 0x00; self.nr43 = 0x00; self.nr44 = 0x00;
-    }
-
-    // Increase length timer. When the timer reaches 64, the timer is turned off
-    pub fn inc_length(&mut self) {
-        if self.sound_length_enable() {
-            if self.length_timer < 64 {
-                self.length_timer += 1;
-            } else {
-                // TODO: Call turn_off instead?
-                self.is_enabled = false;
-            }
-        }
+        self.nr41 = 0x00; self.nr42 = 0x00;
+        self.nr43 = 0x00; self.nr44 = 0x00;
     }
     
-    pub fn turn_off(&mut self) {
-        self.reset_regs();
-        self.is_enabled = false;
-    }
-
-    pub fn sample(&self) -> u8 {
-        return if self.lsfr[0] {
-            self.volume
-        } else {
-            0
-        }
-    }
-
     pub fn tick(&mut self) {
         // Don't overflow
         if self.period_timer > 0 {
@@ -172,4 +149,35 @@ impl Channel4 {
     fn lfsr_width(&self)           -> bool { self.is_bit_set(self.nr43, 3) }
     fn clock_divider(&self)        -> u8   { self.nr43 & 7 }
     fn sound_length_enable(&self)  -> bool { self.is_bit_set(self.nr44, 6) }
+}
+
+impl Channel for Channel4 {
+    fn is_enabled(&self) -> bool {
+        self.is_enabled
+    }
+
+    // Increase length timer. When the timer reaches 64, the timer is turned off
+    fn inc_length(&mut self) {
+        if self.sound_length_enable() {
+            if self.length_timer < 64 {
+                self.length_timer += 1;
+            } else {
+                // TODO: Call turn_off instead?
+                self.is_enabled = false;
+            }
+        }
+    }
+
+    fn turn_off(&mut self) {
+        self.reset_regs();
+        self.is_enabled = false;
+    }
+
+    fn sample(&self) -> u8 {
+        return if self.lsfr[0] {
+            self.volume
+        } else {
+            0
+        }
+    }
 }

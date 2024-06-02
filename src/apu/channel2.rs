@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 use crate::consts::*;
+use crate::apu::Channel as Channel;
 
 pub struct Channel2 {
     nr21 :u8, nr22 :u8, nr23 :u8, nr24 :u8,
@@ -31,7 +32,6 @@ impl Channel2 {
 
 
     pub fn init(&mut self) {}
-    pub fn is_enabled(&self) -> bool { self.is_enabled }
 
     pub fn read(&self, addr :u16) -> u8 {
         return match addr {
@@ -108,19 +108,6 @@ impl Channel2 {
         self.env_counter = self.env_sweep_pace();
     }
 
-    // Increase length timer. When the timer reaches 64, the timer is turned off
-    pub fn inc_length(&mut self) {
-        if self.sound_length_enable() {
-            if self.length_timer < 64 {
-                self.length_timer += 1;
-            } else {
-                // TODO: Call turn_off instead?
-                self.is_enabled = false;
-            }
-        }
-    }
-
-
     // Set the period registers
     fn set_period(&mut self, val :u16) {
         self.nr23 = (val&0xFF) as u8; // nr13 = Lowest 8 bits
@@ -161,11 +148,6 @@ impl Channel2 {
         self.nr23 = 0; self.nr24 = 0;
     }
 
-    pub fn turn_off(&mut self) {
-        self.reset_regs();
-        self.is_enabled = false;
-    }
-
     fn duty_cicle(&self) -> u8 {
         let duties :[[u8;8]; 4] = [
             [1,1,1,1,1,1,1,0], // 12.5%
@@ -177,24 +159,10 @@ impl Channel2 {
         return duties[self.wave_duty() as usize][self.duty_counter as usize];
     }
 
-    pub fn sample(&self) -> u8 {
-        return if self.is_enabled {
-             self.volume * self.duty_cicle()
-        } else {
-            0
-        }
-    }
-
-    fn load_period_timer(&mut self) {
-        //self.period_timer = (1_048_576 as u32)/(2048-self.period() as u32);//0x800-self.period();
-        self.period_timer = 2 * (0x800 - self.period() as u32);
-    }
-
-
     pub fn tick(&mut self) {
         //if self.counter == 0 {
             if self.period_timer == 0 {
-                self.load_period_timer();
+                self.period_timer = 2 * (0x800 - self.period() as u32);
                 self.duty_counter = (self.duty_counter+1)%8;
             } else {
                 self.period_timer -= 1;
@@ -241,4 +209,35 @@ impl Channel2 {
 
     // NR24
     fn sound_length_enable(&self) -> bool { self.is_bit_set(self.nr24, 6)  }
+}
+
+impl Channel for Channel2 {
+    fn is_enabled(&self) -> bool {
+        self.is_enabled
+    }
+
+    // Increase length timer. When the timer reaches 64, the timer is turned off
+    fn inc_length(&mut self) {
+        if self.sound_length_enable() {
+            if self.length_timer < 64 {
+                self.length_timer += 1;
+            } else {
+                // TODO: Call turn_off instead?
+                self.is_enabled = false;
+            }
+        }
+    }
+
+    fn turn_off(&mut self) {
+        self.reset_regs();
+        self.is_enabled = false;
+    }
+
+    fn sample(&self) -> u8 {
+        return if self.is_enabled {
+             self.volume * self.duty_cicle()
+        } else {
+            0
+        }
+    }
 }

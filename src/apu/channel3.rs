@@ -3,6 +3,7 @@
 #![allow(unused_imports)]
 use sdl2::audio::{AudioCallback, AudioSpecDesired};
 use crate::consts::*;
+use crate::apu::Channel as Channel;
 
 
 pub struct Channel3 {
@@ -31,7 +32,6 @@ impl Channel3 {
     }
     
     pub fn init(&mut self) {}
-    pub fn is_enabled(&self) -> bool { self.is_enabled }
     
     pub fn read(&self, addr :u16) -> u8 {
         return match addr {
@@ -97,49 +97,9 @@ impl Channel3 {
         self.length_timer = self.initial_length_timer();
     }
 
-    // Increase length timer. When the timer reaches 255, the timer is turned off
-    pub fn inc_length(&mut self) {
-        if self.sound_length_enable() {
-            if self.length_timer < 255 {
-                self.length_timer += 1;
-            } else {
-                // TODO: Call turn_off instead?
-                self.is_enabled = false;
-            }
-        }
-    }
-
     pub fn reset_regs(&mut self) {
         self.nr30 = 0x00; self.nr31 = 0x00; self.nr32 = 0x00;
         self.nr33 = 0x00; self.nr34 = 0x00;
-    }
-
-    pub fn turn_off(&mut self) {
-        self.reset_regs();
-        self.is_enabled = false;
-    }
-
-    pub fn sample(&self) -> u8 {
-        let wave_nibble = if self.waveram_pos%2 == 0 {
-            // Upper nibble
-            self.wave_ram[(self.waveram_pos / 2) as usize] >> 4
-        } else {
-            // Lower nibble
-            self.wave_ram[((self.waveram_pos - 1) / 2) as usize]&0x0F
-        };
-
-        return match self.output_level() {
-            0 => 0,              // Mute
-            1 => wave_nibble,    // 100%
-            2 => wave_nibble>>1, // 50%
-            3 => wave_nibble>>2, // 25&
-            _ => panic!("Invalid output level: {}", self.output_level())
-        };
-    }
-
-    fn load_period_timer(&mut self) {
-        //self.period_timer = (2097152 as u32/(2048-self.period() as u32)) as u16;
-        self.period_timer = 4 * (0x800 - self.period()) as u32;
     }
 
     pub fn tick (&mut self) {
@@ -150,7 +110,7 @@ impl Channel3 {
             }
 
             if self.period_timer == 0 {
-                self.load_period_timer();
+                self.period_timer = 4 * (0x800 - self.period()) as u32;
                 self.waveram_pos = (self.waveram_pos+1)%32;
             }
         //}
@@ -179,4 +139,47 @@ impl Channel3 {
 
     // NR34
     fn sound_length_enable(&self)  -> bool { self.is_bit_set(self.nr34, 6) }
+}
+
+impl Channel for Channel3 {
+    fn is_enabled(&self) -> bool {
+        self.is_enabled
+    }
+
+    // Increase length timer. When the timer reaches 255, the timer is turned off
+    fn inc_length(&mut self) {
+        if self.sound_length_enable() {
+            if self.length_timer < 255 {
+                self.length_timer += 1;
+            } else {
+                // TODO: Call turn_off instead?
+                self.is_enabled = false;
+            }
+        }
+    }
+
+    fn turn_off(&mut self) {
+        self.reset_regs();
+        self.is_enabled = false;
+    }
+
+    fn sample(&self) -> u8 {
+        let wave_nibble = if self.waveram_pos%2 == 0 {
+            // Upper nibble
+            self.wave_ram[(self.waveram_pos / 2) as usize] >> 4
+        } else {
+            // Lower nibble
+            self.wave_ram[((self.waveram_pos - 1) / 2) as usize]&0x0F
+        };
+
+        return match self.output_level() {
+            0 => 0,              // Mute
+            1 => wave_nibble,    // 100%
+            2 => wave_nibble>>1, // 50%
+            3 => wave_nibble>>2, // 25&
+            _ => panic!("Invalid output level: {}", self.output_level())
+        };
+    }
+
+
 }

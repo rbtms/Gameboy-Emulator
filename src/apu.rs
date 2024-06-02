@@ -10,6 +10,13 @@ mod audio;
 
 // TODO: Turning the APU off resets the duty counters
 
+pub trait Channel {
+    fn is_enabled(&self) -> bool;
+    fn inc_length(&mut self);
+    fn turn_off(&mut self);
+    fn sample(&self) -> u8;
+}
+
 #[allow(dead_code)]
 pub struct APU {
     nr50 :u8, nr51 :u8, nr52 :u8,
@@ -22,7 +29,7 @@ pub struct APU {
     ch4 :channel4::Channel4,
 
     audio: audio::Audio,
-    n: u16
+    sample_counter: u16
 }
 
 impl APU {
@@ -38,7 +45,7 @@ impl APU {
             ch4: channel4::Channel4::new(),
 
             audio: audio::Audio::new(subsystem),
-            n: 0
+            sample_counter: 0
         }
     }
 
@@ -125,8 +132,9 @@ impl APU {
             self.ch3.turn_off();
             self.ch4.turn_off();
 
-            self.nr50 = 0x00; self.nr51 = 0x00; self.nr52 = 0x00;
+            self.nr50 = 0x00; self.nr51 = 0x00; // self.nr52 = 0x00;
             self.div_apu = 0;
+            self.prev_div_bit = false;
         }
     }
 
@@ -155,7 +163,7 @@ impl APU {
 
     /* ------------------------------------------------------------------------------------------ */
 
-    pub fn add_samples(&mut self, n_samples: u16) {
+    fn add_samples(&mut self, n_samples: u16) {
         // Left audio
         let left = if self.is_mix_ch1_left() {self.ch1.sample()} else {0}
             + if self.is_mix_ch2_left() {self.ch2.sample()} else {0}
@@ -176,17 +184,10 @@ impl APU {
     }
 
     pub fn tick(&mut self, div :u8) {
-        //if div%2 == 0 { println!("DIV {} length={} sweep={} envelope={}", div, div%2 == 0, div%4==0, div%8==0); }
-
         if self.is_apu_enabled() {
-            self.ch1.tick();
-            self.ch2.tick();
-            self.ch3.tick();
-            self.ch4.tick();
-
             /*
                 A “DIV-APU” counter is increased every time DIV’s bit 4 (5 in double-speed mode) goes from 1 to 0,
-                therefore at a frequency of 512 Hz (regardless of whether double-speed is active).
+                therefore at a frequency of 512 Hz.
                 Thus, the counter can be made to increase faster by writing to DIV while its relevant bit is set
                 (which clears DIV, and triggers the falling edge).
              */
@@ -215,15 +216,20 @@ impl APU {
             }
 
             self.prev_div_bit = div_bit;
+
+            self.ch1.tick();
+            self.ch2.tick();
+            self.ch3.tick();
+            self.ch4.tick();
         }
 
         
         // FREQ_CPU/FREQ_AUDIO = 87.38, accounting for both channels = 174.76
-        if self.n == 88 {
+        if self.sample_counter == 88 {
             self.add_samples(4);
-            self.n = 0;
+            self.sample_counter = 0;
         } else {
-            self.n += 1;
+            self.sample_counter += 1;
         }
     }
 }
