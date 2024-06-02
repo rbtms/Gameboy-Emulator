@@ -62,7 +62,7 @@ impl Cartridge for MBC2 {
     fn init(&mut self) {
         // TODO: load RAM
         // TODO: Disable on debug
-        //self.print_rom_data();
+        self.print_rom_data();
     }
 
     fn read(&self, addr :u16) -> u8 {
@@ -87,10 +87,10 @@ impl Cartridge for MBC2 {
 
     fn write(&mut self, addr :u16, val :u8) {
         match addr {
-            // Enable builtin RAM / Select ROM bank. Highest bit decides which.
+            // Enable builtin RAM / Select ROM bank. Bit 8 of the address decides which.
             BANK0_START..=BANK0_END => {
                 // RAM enable/disable. RAMG is enabled when the last nibble is 0xA
-                if ((val>>7)&1) == 0 {
+                if ((addr>>8)&1) == 0 {
                     self.ramg = val&0x0F == 0x0A;
                 }
                 // ROM bank select
