@@ -128,6 +128,7 @@ impl Joypad {
         let is_direction = (val>>4)&1 == 0;
         let is_action    = (val>>5)&1 == 0;
 
+        // Keep in mind that the default value is 1, not 0
         if is_direction && self.direction == 0b11111111 { self.direction = val; }
         if is_action && self.action == 0b11111111 { self.action = val; }
 

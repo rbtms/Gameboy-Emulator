@@ -24,7 +24,6 @@ pub struct Screen {
     canvas :sdl2::render::Canvas<sdl2::video::Window>,
     rom_path :String,
     screen_mult :u16,
-    framebuffer :[u8;(SCREEN_WIDTH*SCREEN_HEIGHT) as usize],
     rects: Vec<Vec<Rect>>
 }
 
@@ -43,8 +42,6 @@ impl Screen {
             canvas,
             rom_path,
             screen_mult,
-            // Initialize as 4 to force a first draw (id values go from 0 to 3)
-            framebuffer: [4;(SCREEN_WIDTH*SCREEN_HEIGHT) as usize],
             rects: vec![vec![], vec![], vec![], vec![]]
         }
     }
@@ -70,27 +67,11 @@ impl Screen {
         ).unwrap()
     }
 
-    pub fn get_pixel_color_index(&self, pixel :Pixel, bgp :u8, obp0 :u8, obp1 :u8) -> u8 {
+    fn get_pixel_color_index(&self, pixel :Pixel, bgp :u8, obp0 :u8, obp1 :u8) -> u8 {
         return match pixel.get_palette() {
             BGP  => (bgp  >> (2*(pixel.get_id())))&3,
             OBP0 => (obp0 >> (2*(pixel.get_id())))&3,
             OBP1 => (obp1 >> (2*(pixel.get_id())))&3
-        }
-    }
-
-    pub fn has_line_changed(&self, linebuffer :&[u8], y :u8) -> bool {
-        for x in 0..SCREEN_WIDTH as usize {
-            if linebuffer[x] != self.framebuffer[y as usize * SCREEN_WIDTH as usize + x] {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    pub fn update_framebuffer(&mut self, linebuffer :&[u8], y :u8) {
-        for x in 0..SCREEN_WIDTH as usize {
-            self.framebuffer[y as usize * SCREEN_WIDTH as usize + x] = linebuffer[x];
         }
     }
 
@@ -109,16 +90,12 @@ impl Screen {
             tmp_linebuffer[x as usize] = id;
         }
 
-        /*if self.has_line_changed(&tmp_linebuffer, y) {
-            self.update_framebuffer(&tmp_linebuffer, y);
-        }*/
-
         if y as u16 == SCREEN_HEIGHT-1 {
             self.draw_frame();
         }
     }
 
-    pub fn draw_frame(&mut self) {
+    fn draw_frame(&mut self) {
         self.canvas.set_draw_color(Color::WHITE);
         self.canvas.fill_rects(&self.rects[0b00]).unwrap();
         self.canvas.set_draw_color(Color::RGB(160, 160, 160));

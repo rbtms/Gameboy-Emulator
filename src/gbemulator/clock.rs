@@ -3,7 +3,7 @@ use std::thread::sleep;
 
 
 // GLobal constants
-const S_PER_FRAME     :f64 = 1.0/60.0;
+const S_PER_FRAME: f64 = 1.0/60.0;
 
 
 pub struct Clock {

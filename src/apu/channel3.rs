@@ -180,6 +180,4 @@ impl Channel for Channel3 {
             _ => panic!("Invalid output level: {}", self.output_level())
         };
     }
-
-
 }

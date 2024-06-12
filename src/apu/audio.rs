@@ -29,7 +29,6 @@ impl Audio {
             return;
         }
 
-
         //let max_queue_size = 69905*2; // 2 frames
         //let n_bytes = (max_queue_size as u32-self.device.size()).min(n_samples as u32);
         let n_bytes = n_samples;

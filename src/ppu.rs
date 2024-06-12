@@ -43,6 +43,20 @@ impl Clone for Palette {
     }
 }
 
+struct ObjFlags {
+    bg_over_obj: bool,
+    y_flip: bool,
+    x_flip: bool,
+    palette_n: bool
+}
+
+struct Object {
+    y: u8,
+    x: u8,
+    tile_index: u8,
+    flags: ObjFlags
+}
+
 #[derive(Debug, Copy)]
 struct ObjPixel {
     color_id    : u8,
@@ -86,7 +100,7 @@ pub struct PPU {
     oam         : [u8;0xA0],    // 0xFE00 - 0xFE9F
     current_dot : u16,
     linebuffer  : Vec<Pixel>,
-    line_objs   : Vec<(u8, u8, u8, u8)>,
+    line_objs   : Vec<Object>,
     int         : Rc<RefCell<InterruptManager>>,
     ly   :u8, lyc  :u8, scx  :u8, scy  :u8,
     wx   :u8, wy   :u8, ldcd :u8, stat :u8,
@@ -136,11 +150,11 @@ impl PPU {
         self.oam[(addr-OAM_START) as usize] = val;
     }
 
-    pub fn can_access_vram(&self) -> bool {
+    fn can_access_vram(&self) -> bool {
         return !(self.is_lcd_enabled() && self.mode() == STATMode::Drawing);
     }
 
-    pub fn can_access_oam(&self) -> bool {
+    fn can_access_oam(&self) -> bool {
         return !(
             self.is_lcd_enabled()
         && (self.mode() == STATMode::OAMSearch || self.mode() == STATMode::Drawing)
@@ -374,38 +388,35 @@ impl PPU {
             SCREEN_WIDTH as usize
         ];
 
-        for (y, x, tile_index, attrs) in self.line_objs.iter() {
-            let bg_over_obj = self.is_set(*attrs, 7);
-            let y_flip      = self.is_set(*attrs, 6);
-            let x_flip      = self.is_set(*attrs, 5);
-            let palette_n   = self.is_set(*attrs, 4);
-
+        for obj in self.line_objs.iter() {
             // The object isn't hidden
-            if *x > 0 && *x < 168 {
+            if obj.x > 0 && obj.x < 168 {
                 // Normalize in the range 0-144 and 0-160
-                let y = *y;
-                let x = *x;
+                //let y = y;
+                //let x = *x;
 
                 // Line to draw within the 8x(8/16) tile
                 // y <= LY
-                let line_i = if y_flip { 7-((self.ly+16)-y) } else {(self.ly+16)-y};
-                let byte_lo = self.vram(ADDR_VRAM_0 + *tile_index as u16 * 16 + line_i as u16 * 2);
-                let byte_hi = self.vram(ADDR_VRAM_0 + *tile_index as u16 * 16 + line_i as u16 * 2 + 1);
+                let line_i = if obj.flags.y_flip { 7-((self.ly+16)-obj.y) } else {(self.ly+16)-obj.y};
+                let byte_lo = self.vram(ADDR_VRAM_0 + obj.tile_index as u16 * 16 + line_i as u16 * 2);
+                let byte_hi = self.vram(ADDR_VRAM_0 + obj.tile_index as u16 * 16 + line_i as u16 * 2 + 1);
 
-                let limit = if x < 8 {x} else {8};
+                let limit = if obj.x < 8 {obj.x} else {8};
                 for b_i in (0..limit).rev() {
                     let color_id = self.get_bit_id(byte_hi, byte_lo, b_i);
-                    let mut index = if x_flip { x + b_i } else { x + (7-b_i) };
-                    if x < 8 { index += 8-x; }
+                    let mut index = if obj.flags.x_flip { obj.x + b_i } else { obj.x + (7-b_i) };
+                    if obj.x < 8 { index += 8-obj.x; }
                     let index = (index-8) as usize;
 
                     // The pixel is visible
                     if (index as u16) < SCREEN_WIDTH
                     // The actual pixel is transparent
-                    && (buf[index].color_id == 0 || x < buf[index].x_priority) { 
+                    && (buf[index].color_id == 0 || obj.x < buf[index].x_priority) { 
                         buf[index] = ObjPixel {
-                            color_id, x_priority: x, bg_over_obj,
-                            palette: if palette_n { Palette::OBP1 } else { Palette::OBP0 }
+                            color_id,
+                            x_priority: obj.x,
+                            bg_over_obj: obj.flags.bg_over_obj,
+                            palette: if obj.flags.palette_n { Palette::OBP1 } else { Palette::OBP0 }
                         }
                     }
                 }
@@ -430,9 +441,16 @@ impl PPU {
             let mut tile_index  = self.oam(oam_addr+2);
             let attrs           = self.oam(oam_addr+3);
 
+            let flags = ObjFlags {
+                bg_over_obj: self.is_set(attrs, 7),
+                y_flip: self.is_set(attrs, 6),
+                x_flip: self.is_set(attrs, 5),
+                palette_n: self.is_set(attrs, 4)
+            };
+
             if self.obj_size() == 8 {
                 if y <= self.ly+16 && (self.ly+16)-y < 8 && self.line_objs.len() < 10 {
-                    self.line_objs.push((y, x, tile_index, attrs));
+                    self.line_objs.push(Object { y, x, tile_index, flags });
                 }
             // obj size == 16
             } else if y <= self.ly+16 && (self.ly+16)-y < 16 && self.line_objs.len() < 10 {
@@ -449,7 +467,7 @@ impl PPU {
                 }
                 
                 // Ignore last bit
-                self.line_objs.push((y, x, tile_index, attrs));
+                self.line_objs.push(Object { y, x, tile_index, flags });
             }
         }
     }

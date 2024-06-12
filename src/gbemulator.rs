@@ -78,21 +78,16 @@ impl GBEmulator {
         self.screen.borrow_mut().init();
     }
 
-    pub fn handle_reload(&mut self) {
-        self.init();
-        self.screen.borrow_mut().clear();
-    }
-
     pub fn run(&mut self) {
         // Initialize stuff
-        self.screen.borrow_mut().init();
+        self.screen.borrow_mut().clear();
 
         // Main loop
         while !self.is_quit {
             self.run_frame();
         }
 
-        // TODO: Reenable
+        // TODO: Reenable every 60 frames
         // TODO: Why every frame????
         //self.bus.borrow().save_ram();
     }
@@ -114,7 +109,7 @@ impl GBEmulator {
         self.event_loop();
     }
 
-    pub fn event_loop(&mut self) {
+    fn event_loop(&mut self) {
         for event in self.events.poll_iter() {
             match event {
                 Event::Quit {..} |
