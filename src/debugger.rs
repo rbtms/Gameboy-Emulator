@@ -65,9 +65,7 @@ pub struct Debugger {
     last_instrs         :VecDeque<Instruction>,  // Last executed instructions
     wait_instr_n        :u16,               // Wait for n instructions to update the TUI
     has_breakpoint_addr :bool,              // Whether it has a breakpoint address to start
-    has_breakpoint_op   :bool,              // Whether it has a breakpoint opcode to start
     breakpoint_addr     :u16,               // The breakpoint address to start
-    breakpoint_op       :u8,                // The breakpoint opcode to start
     io_table            :HashMap<u16, &'static str>,
 }
 
@@ -80,9 +78,7 @@ impl Debugger {
             last_instrs         : VecDeque::with_capacity(100),
             wait_instr_n        : 0,
             has_breakpoint_addr : has_breakpoint,
-            has_breakpoint_op   : false,
             breakpoint_addr     : breakpoint_addr,
-            breakpoint_op       : 0x00,
             io_table :HashMap::from(IO_ADDR_TEXT),
         }
     }
@@ -90,12 +86,12 @@ impl Debugger {
     /* Initialize the TUI */
     pub fn init(&mut self) {
         self.gbemu.init();
-        self.tui.initialize();
+        self.tui.init();
     }
 
     pub fn run(&mut self) {
         while !self.tui.is_done() {
-            // TODO: Remove
+            // TODO: Remove. For tests.
             if self.gbemu.get_cpu().get_pc() > 0xFFF0 { self.tui.close(); println!("end"); return; }
 
             if self.gbemu.get_cpu().is_new_instr() {
@@ -112,34 +108,18 @@ impl Debugger {
         return ((hi as u16) << 8) | (lo as u16);
     }
 
-    /* Set a breakpoint address */
-    pub fn set_breakpoint_addr(&mut self, addr :u16) {
-        self.has_breakpoint_addr = true;
-        self.breakpoint_addr = addr;
-    }
-
-    /* Set a breakpoint opcode */
-    pub fn set_breakpoint_opcode(&mut self, instr :u8) {
-        self.has_breakpoint_op = true;
-        self.breakpoint_op = instr;
-    }
-
     /* Returns whether it has reached a breakpoint */
-    pub fn has_reached_breakpoint(&mut self) -> bool {
+    fn has_reached_breakpoint(&mut self) -> bool {
         // Check for a breakpoint address
         if self.has_breakpoint_addr && self.gbemu.get_cpu().get_pc()-1 == self.breakpoint_addr {
             self.has_breakpoint_addr = false;
         }
-        // Check for a breakpoint opcode
-        if self.has_breakpoint_op && self.gbemu.get_cpu().get_opcode() == self.breakpoint_op {
-            self.has_breakpoint_op = false;
-        }
 
-        return !self.has_breakpoint_addr && !self.has_breakpoint_op;
+        return !self.has_breakpoint_addr;
     }
 
     /* Update the debugger state and render the TUI */
-    pub fn update(&mut self) {
+    fn update(&mut self) {
         // If it has a breakpoint, check if it has reached it
         if !self.has_reached_breakpoint() {
             return;
@@ -147,7 +127,7 @@ impl Debugger {
 
         // Dont update the UI for n M-Cycles depending on user input
         if self.wait_instr_n == 0 {
-            self.dissasemble();
+            self.dissasemble_instrs();
 
             let bus = self.gbemu.get_bus();
             let bus = bus.borrow();
@@ -163,7 +143,7 @@ impl Debugger {
     }
 
     /* Replace instruction text variables like {n} or {nn} */
-    pub fn replace_variables(&self, s :String, pc :u16) -> String {
+    fn replace_variables(&self, s :String, pc :u16) -> String {
         let bus = self.gbemu.get_bus();
         let bus = bus.borrow();
 
@@ -195,7 +175,7 @@ impl Debugger {
     }
    
     /* Dissasemble ROM instructions */
-    pub fn dissasemble(&mut self) {
+    fn dissasemble_instrs(&mut self) {
         let bus = self.gbemu.get_bus();
         let bus = bus.borrow();
         self.instrs = vec![];

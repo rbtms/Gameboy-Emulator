@@ -220,7 +220,7 @@ impl DebuggerTUI {
     }
 
     /* Builds and renders all screen widgets */
-    pub fn render(&mut self,
+    fn render(&mut self,
         instrs      :&Vec<Instruction>,
         last_instrs :&VecDeque<Instruction>,
         cpu :&CPU,
@@ -254,7 +254,7 @@ impl DebuggerTUI {
      * Blocks the debugger until it receives input.
      * Returns number of cycles to skip.
      */
-    pub fn read_input(&mut self,
+    fn read_input(&mut self,
         instrs      :&Vec<Instruction>,
         last_instrs :&VecDeque<Instruction>,
         cpu :&CPU,
@@ -289,7 +289,7 @@ impl DebuggerTUI {
     }
 
     /* Initialize the TUI */
-    pub fn initialize(&mut self) {
+    pub fn init(&mut self) {
         let mut stdout = io::stdout();
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture).unwrap();
         enable_raw_mode().unwrap();
