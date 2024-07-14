@@ -62,8 +62,10 @@ impl RAM {
             _ => 0x00 // Otherwise dont OR mask anything
         }
     }
+}
 
-    pub fn read(&self, addr :RAMINDEX) -> RAMVAL {
+impl ComponentWithMemory for RAM {
+    fn read(&self, addr :RAMINDEX) -> RAMVAL {
         return match addr {
             WORK_RAM_START..=WORK_RAM_END => self.wram[(addr-WORK_RAM_START) as usize],
             // Its mapped to work ram
@@ -74,7 +76,7 @@ impl RAM {
         }
     }
     
-    pub fn write(&mut self, addr :RAMINDEX, val :RAMVAL) {
+    fn write(&mut self, addr :RAMINDEX, val :RAMVAL) {
         return match addr {
             WORK_RAM_START..=WORK_RAM_END => self.wram[(addr-WORK_RAM_START) as usize] = val,
             // Its mapped to work ram
