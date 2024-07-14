@@ -91,9 +91,6 @@ impl APU {
 
     // NR52: Sound on/off
     fn is_apu_enabled(&self) -> bool { self.is_bit_set(self.nr52, 7) }
-    fn is_ch4_enabled(&self) -> bool { self.is_bit_set(self.nr52, 3) }
-    fn is_ch3_enabled(&self) -> bool { self.is_bit_set(self.nr52, 2) }
-    fn is_ch2_enabled(&self) -> bool { self.is_bit_set(self.nr52, 1) }
     // NR51: Sound panning
     fn is_mix_ch4_left(&self)   -> bool { self.is_bit_set(self.nr51, 7) }
     fn is_mix_ch3_left(&self)   -> bool { self.is_bit_set(self.nr51, 6) }

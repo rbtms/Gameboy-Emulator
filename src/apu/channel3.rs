@@ -71,16 +71,12 @@ impl Channel3 {
     
     // NR30
     fn dac_enable(&self)           -> bool { self.is_bit_set(self.nr30, 7) }
-
     // NR31
     fn initial_length_timer(&self) -> u8   { self.nr31 }
-
     // NR32
     fn output_level(&self)         -> u8   { (self.nr32 >> 5) & 3 }
-
     // NR33 - NR34
     fn period(&self)               -> u16  { ((self.nr34 as u16 & 7) << 8) | (self.nr33 as u16) }
-
     // NR34
     fn sound_length_enable(&self)  -> bool { self.is_bit_set(self.nr34, 6) }
 }

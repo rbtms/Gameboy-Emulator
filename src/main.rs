@@ -16,7 +16,6 @@ fn parse_args() -> Config {
     // --mult, screen size multiplier. Used by screen, not here
     let is_mult = args.contains(&"--mult".to_string());
     let mut screen_mult = 2;
-    println!("MULT: {}", is_mult);
     if is_mult {
         let index = args.iter().position(|s| (*s).contains("--mult")).unwrap();
         args.remove(index);
@@ -55,7 +54,7 @@ fn parse_args() -> Config {
 
 fn main() {
     let config = parse_args();
-    
+
     let mut gbemu = gb::gbemulator::GBEmulator::new(
         &config.rom_path,
         config.screen_mult

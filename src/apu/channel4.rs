@@ -35,7 +35,12 @@ impl Channel4 {
         self.is_enabled = true;
 
         self.env_counter = self.env_sweep_pace();
+        self.volume = self.initial_env_volume();
         self.length_timer = self.initial_length_timer();
+
+        for i in 0..15 {
+            self.lsfr[i] = false;
+        }
     }
 
     pub fn change_envelope(&mut self) {
@@ -76,15 +81,15 @@ impl Channel4 {
         }
 
         if self.period_timer == 0 {
-            let new_val = !(self.lsfr[14] ^ self.lsfr[15]);
+            let new_val = !(self.lsfr[0] ^ self.lsfr[1]);
 
             // Shift LSFR to the right
-            for i in 0..15 {
-                self.lsfr[15-i] = self.lsfr[15-i-1];
+            for i in 0..14 {
+                self.lsfr[i] = self.lsfr[i+1];
             }
 
             // Add new value to the left
-            self.lsfr[0] = new_val;
+            self.lsfr[15] = new_val;
             
             // If short-mode is selected, copy the bit to b7 as well
             if self.lfsr_width() {
@@ -136,8 +141,12 @@ impl Channel for Channel4 {
 
     fn sample(&self) -> u8 {
         return if self.lsfr[0] {
-            self.volume
+            if self.volume != 0 {
+                println!("vol: {}", self.volume);
+            }
+            self.volume*5
         } else {
+            //println!("vol: None");
             0
         }
     }
