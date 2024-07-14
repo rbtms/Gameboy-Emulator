@@ -1,5 +1,3 @@
-//use std::time::SystemTime;
-
 use crate::consts::*;
 use crate::cartridge::{CartridgeType, Cartridge};
 use std::io::prelude::Write;
@@ -100,6 +98,55 @@ impl Cartridge for MBC3 {
         self.print_rom_data();
     }
 
+    fn load_ram(&mut self) {
+        let path = format!("{}/{}", SAVE_PATH, self.file);
+        if std::path::Path::new(&path).exists() {
+            let ram = std::fs::read(path).unwrap();
+
+            for (i, byte) in ram.iter().enumerate() {
+                self.ext_ram[i] = *byte;
+            }
+        }
+
+    }
+
+    fn save_ram(&self) {
+        if self.cartridge_type.has_ram() && self.ram_size > 0 {
+            let path = format!("{}/{}", SAVE_PATH, self.file);
+
+            let mut file = std::fs::File::create(path).unwrap();
+            file.write_all(&self.ext_ram).unwrap();
+        }
+    }
+
+    fn print_rom_data(&self) {
+        println!("\nFile:\n{}", self.file);
+        
+        println!("\nTitle:");
+        for n in self.rom[0x134..=0x143].iter() {
+            if *n >= 60 && *n <= 120 { // Pritable ascii
+                print!("{}", *n as char);
+            }
+        }
+        println!();
+
+        println!("\nCGB Flag\t\t: {}", self.cgb_flag);
+        println!("SGB Flag\t\t: {}", self.sgb_flag);
+        println!("Cartridge type\t\t: {:?}", self.cartridge_type);
+        println!("ROM size\t\t: {} KiB", self.rom_size);
+        println!("ROM Banks \t\t: {}", self.rom_bank_n);
+        println!("RAM size\t\t: {} KiB", self.ram_size);
+        println!("RAM Banks \t\t: {}", self.ram_bank_n);
+        println!("Mask ROM version number\t: 0x{:02X}", self.mask_rom_version_n);
+        println!("Header checksum\t\t: 0x{:02X}", self.header_checksum);
+        println!("Global checksum\t\t: 0x{:04X}", self.global_checksum);
+        println!();
+        println!("ROM loaded");
+        println!("--------------------------------------\n");
+    }
+}
+
+impl ComponentWithMemory for MBC3 {
     fn read(&self, addr :u16) -> u8 {
         return match addr {
             BANK0_START..=BANK0_END => self.rom[addr as usize],
@@ -171,50 +218,4 @@ impl Cartridge for MBC3 {
         }
     }
 
-    fn load_ram(&mut self) {
-        let path = format!("{}/{}", SAVE_PATH, self.file);
-        if std::path::Path::new(&path).exists() {
-            let ram = std::fs::read(path).unwrap();
-
-            for (i, byte) in ram.iter().enumerate() {
-                self.ext_ram[i] = *byte;
-            }
-        }
-
-    }
-
-    fn save_ram(&self) {
-        if self.cartridge_type.has_ram() && self.ram_size > 0 {
-            let path = format!("{}/{}", SAVE_PATH, self.file);
-
-            let mut file = std::fs::File::create(path).unwrap();
-            file.write_all(&self.ext_ram).unwrap();
-        }
-    }
-
-    fn print_rom_data(&self) {
-        println!("\nFile:\n{}", self.file);
-        
-        println!("\nTitle:");
-        for n in self.rom[0x134..=0x143].iter() {
-            if *n >= 60 && *n <= 120 { // Pritable ascii
-                print!("{}", *n as char);
-            }
-        }
-        println!();
-
-        println!("\nCGB Flag\t\t: {}", self.cgb_flag);
-        println!("SGB Flag\t\t: {}", self.sgb_flag);
-        println!("Cartridge type\t\t: {:?}", self.cartridge_type);
-        println!("ROM size\t\t: {} KiB", self.rom_size);
-        println!("ROM Banks \t\t: {}", self.rom_bank_n);
-        println!("RAM size\t\t: {} KiB", self.ram_size);
-        println!("RAM Banks \t\t: {}", self.ram_bank_n);
-        println!("Mask ROM version number\t: 0x{:02X}", self.mask_rom_version_n);
-        println!("Header checksum\t\t: 0x{:02X}", self.header_checksum);
-        println!("Global checksum\t\t: 0x{:04X}", self.global_checksum);
-        println!();
-        println!("ROM loaded");
-        println!("--------------------------------------\n");
-    }
 }

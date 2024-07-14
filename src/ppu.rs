@@ -161,56 +161,6 @@ impl PPU {
         );
     }
 
-    pub fn read(&self, addr :u16) -> u8 {
-        return match addr {
-            VRAM_START..=VRAM_END => if self.can_access_vram() {
-                self.vram[(addr-VRAM_START) as usize]
-            } else {
-                0xff
-            },
-            OAM_START..=OAM_END   => if self.can_access_oam()  {
-                self.oam[(addr-OAM_START) as usize]
-            } else {
-                0xff
-            },
-            ADDR_LY   => self.ly,
-            ADDR_LYC  => self.lyc,
-            ADDR_WY   => self.wy,
-            ADDR_WX   => self.wx,
-            ADDR_SCY  => self.scy,
-            ADDR_SCX  => self.scx,
-            ADDR_BGP  => self.bgp,
-            ADDR_OBP0 => self.obp0,
-            ADDR_OBP1 => self.obp1,
-            ADDR_LCDC => self.ldcd,
-            ADDR_STAT => self.stat | 0b10000000, // bit 7 is always 1
-            _ => panic!()
-        }
-    }
-
-    pub fn write(&mut self, addr :u16, val :u8) {
-        return match addr {
-            VRAM_START..=VRAM_END => if self.can_access_vram() {
-                self.vram[(addr-VRAM_START) as usize] = val;
-            },
-            OAM_START..=OAM_END => if self.can_access_oam() {
-                self.oam[(addr-OAM_START) as usize] = val;
-            },
-            ADDR_LY   => { self.write_ly(0); }, // Read only. It resets when its written to
-            ADDR_LYC  => { self.lyc = val; self.check_eq_ly_lyc(); },
-            ADDR_WY   => self.wy  = val,
-            ADDR_WX   => self.wx  = val,
-            ADDR_SCY  => self.scy = val,
-            ADDR_SCX  => self.scx = val,
-            ADDR_BGP  => self.bgp = val,
-            ADDR_OBP0 => self.obp0 = val,
-            ADDR_OBP1 => self.obp1 = val,
-            ADDR_LCDC => self.write_ldcd(val),
-            ADDR_STAT => self.stat = val,
-            _ => panic!()
-        }
-    }
-
     // For internal use
     fn vram(&self, addr :u16) -> u8 {
         return self.vram[(addr-VRAM_START) as usize];
@@ -547,6 +497,58 @@ impl PPU {
                 457 => self.write_ly(self.ly+1),
                 _ => {}
             }
+        }
+    }
+}
+
+impl ComponentWithMemory for PPU {
+    fn read(&self, addr :u16) -> u8 {
+        return match addr {
+            VRAM_START..=VRAM_END => if self.can_access_vram() {
+                self.vram[(addr-VRAM_START) as usize]
+            } else {
+                0xff
+            },
+            OAM_START..=OAM_END   => if self.can_access_oam()  {
+                self.oam[(addr-OAM_START) as usize]
+            } else {
+                0xff
+            },
+            ADDR_LY   => self.ly,
+            ADDR_LYC  => self.lyc,
+            ADDR_WY   => self.wy,
+            ADDR_WX   => self.wx,
+            ADDR_SCY  => self.scy,
+            ADDR_SCX  => self.scx,
+            ADDR_BGP  => self.bgp,
+            ADDR_OBP0 => self.obp0,
+            ADDR_OBP1 => self.obp1,
+            ADDR_LCDC => self.ldcd,
+            ADDR_STAT => self.stat | 0b10000000, // bit 7 is always 1
+            _ => panic!()
+        }
+    }
+
+    fn write(&mut self, addr :u16, val :u8) {
+        return match addr {
+            VRAM_START..=VRAM_END => if self.can_access_vram() {
+                self.vram[(addr-VRAM_START) as usize] = val;
+            },
+            OAM_START..=OAM_END => if self.can_access_oam() {
+                self.oam[(addr-OAM_START) as usize] = val;
+            },
+            ADDR_LY   => { self.write_ly(0); }, // Read only. It resets when its written to
+            ADDR_LYC  => { self.lyc = val; self.check_eq_ly_lyc(); },
+            ADDR_WY   => self.wy  = val,
+            ADDR_WX   => self.wx  = val,
+            ADDR_SCY  => self.scy = val,
+            ADDR_SCX  => self.scx = val,
+            ADDR_BGP  => self.bgp = val,
+            ADDR_OBP0 => self.obp0 = val,
+            ADDR_OBP1 => self.obp1 = val,
+            ADDR_LCDC => self.write_ldcd(val),
+            ADDR_STAT => self.stat = val,
+            _ => panic!()
         }
     }
 }

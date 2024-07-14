@@ -30,45 +30,6 @@ impl Channel4 {
     }
     
     pub fn init(&mut self) {}
-    
-    pub fn read(&self, addr :u16) -> u8 {
-        return match addr {
-            ADDR_NR41 => 0xFF, // Write only,
-            ADDR_NR42 => self.nr42,
-            ADDR_NR43 => self.nr43,
-            ADDR_NR44 => self.nr44 | 0xBF,
-            _ => panic!()
-        }
-    }
-
-    pub fn write(&mut self, addr :u16, val :u8) {
-        match addr {
-            // Length timer
-            //
-            // b7-6 Unused
-            // b5-0 Initial length timer
-            ADDR_NR41 => self.nr41 = val,
-            // Volume & envelope
-            //
-            // b7-6 Initial volume
-            // b3   Env direction
-            // b2-0 Env sweep pace
-            ADDR_NR42 => self.nr42 = val,
-            // Frecuency & randomness
-            //
-            // b7-4 Clock shift
-            // b3   LSFR width
-            // b2-0 Clock divider
-            ADDR_NR43 => self.nr43 = val,
-            // Control
-            //
-            // b7   Trigger
-            // b6   Length enable
-            // b5-0 Unused
-            ADDR_NR44 => self.nr44 = val,
-            _ => panic!()
-        }
-    }
 
     pub fn trigger(&mut self) {
         self.is_enabled = true;
@@ -178,6 +139,47 @@ impl Channel for Channel4 {
             self.volume
         } else {
             0
+        }
+    }
+}
+
+impl ComponentWithMemory for Channel4 {
+    fn read(&self, addr :u16) -> u8 {
+        return match addr {
+            ADDR_NR41 => 0xFF, // Write only,
+            ADDR_NR42 => self.nr42,
+            ADDR_NR43 => self.nr43,
+            ADDR_NR44 => self.nr44 | 0xBF,
+            _ => panic!()
+        }
+    }
+
+    fn write(&mut self, addr :u16, val :u8) {
+        match addr {
+            // Length timer
+            //
+            // b7-6 Unused
+            // b5-0 Initial length timer
+            ADDR_NR41 => self.nr41 = val,
+            // Volume & envelope
+            //
+            // b7-6 Initial volume
+            // b3   Env direction
+            // b2-0 Env sweep pace
+            ADDR_NR42 => self.nr42 = val,
+            // Frecuency & randomness
+            //
+            // b7-4 Clock shift
+            // b3   LSFR width
+            // b2-0 Clock divider
+            ADDR_NR43 => self.nr43 = val,
+            // Control
+            //
+            // b7   Trigger
+            // b6   Length enable
+            // b5-0 Unused
+            ADDR_NR44 => self.nr44 = val,
+            _ => panic!()
         }
     }
 }

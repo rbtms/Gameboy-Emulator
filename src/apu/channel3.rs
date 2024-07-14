@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(unused_imports)]
+use std::path::Component;
+
 use sdl2::audio::{AudioCallback, AudioSpecDesired};
 use crate::consts::*;
 use crate::apu::Channel as Channel;
@@ -32,64 +34,6 @@ impl Channel3 {
     }
     
     pub fn init(&mut self) {}
-    
-    pub fn read(&self, addr :u16) -> u8 {
-        return match addr {
-            ADDR_NR30 => self.nr30 | 0x7F,
-            ADDR_NR31 => 0xFF, // Write only,
-            ADDR_NR32 => self.nr32 | 0x9F,
-            ADDR_NR33 => 0xFF, // Write only,
-            ADDR_NR34 => self.nr34 | 0xBF,
-
-            WAVE_RAM_START..=WAVE_RAM_END
-                => self.wave_ram[(addr-WAVE_RAM_START) as usize],
-            _ => panic!()
-        }
-    }
-
-    pub fn write(&mut self, addr :u16, val :u8) {
-        match addr {
-            // Enable/disable DAC
-            //
-            // b7   DAC On/off
-            // b6-0 Unused
-            ADDR_NR30 => {
-                self.nr30 = val;
-
-                // Turning off the DAC also disables the channel
-                self.is_enabled = false;
-            },
-            // Length timer
-            //
-            // b7-0 Initial length timer
-            ADDR_NR31 => self.nr31 = val,
-            // Output level
-            //
-            // b7   Unused
-            // b6-5 Output level
-            // b4-0 Unused
-            ADDR_NR32 => self.nr32 = val,
-            // Period low
-            ADDR_NR33 => self.nr33 = val,
-            // Trigger/length enable/period high
-            //
-            // b7   Trigger
-            // b6   Length enable 
-            // b2-0 Period high
-            ADDR_NR34 => {
-                if self.is_bit_set(val, 7) {
-                    self.trigger();
-                }
- 
-                self.nr34 = val;
-            },
-
-            WAVE_RAM_START..=WAVE_RAM_END => {
-                self.wave_ram[(addr-WAVE_RAM_START) as usize] = val;
-            },
-            _ => panic!()
-        }
-    }
 
     // Triggers the channel
     fn trigger(&mut self) {
@@ -179,5 +123,65 @@ impl Channel for Channel3 {
             3 => wave_nibble>>2, // 25&
             _ => panic!("Invalid output level: {}", self.output_level())
         };
+    }
+}
+
+impl ComponentWithMemory for Channel3 {
+    fn read(&self, addr :u16) -> u8 {
+        return match addr {
+            ADDR_NR30 => self.nr30 | 0x7F,
+            ADDR_NR31 => 0xFF, // Write only,
+            ADDR_NR32 => self.nr32 | 0x9F,
+            ADDR_NR33 => 0xFF, // Write only,
+            ADDR_NR34 => self.nr34 | 0xBF,
+
+            WAVE_RAM_START..=WAVE_RAM_END
+                => self.wave_ram[(addr-WAVE_RAM_START) as usize],
+            _ => panic!()
+        }
+    }
+
+    fn write(&mut self, addr :u16, val :u8) {
+        match addr {
+            // Enable/disable DAC
+            //
+            // b7   DAC On/off
+            // b6-0 Unused
+            ADDR_NR30 => {
+                self.nr30 = val;
+
+                // Turning off the DAC also disables the channel
+                self.is_enabled = false;
+            },
+            // Length timer
+            //
+            // b7-0 Initial length timer
+            ADDR_NR31 => self.nr31 = val,
+            // Output level
+            //
+            // b7   Unused
+            // b6-5 Output level
+            // b4-0 Unused
+            ADDR_NR32 => self.nr32 = val,
+            // Period low
+            ADDR_NR33 => self.nr33 = val,
+            // Trigger/length enable/period high
+            //
+            // b7   Trigger
+            // b6   Length enable 
+            // b2-0 Period high
+            ADDR_NR34 => {
+                if self.is_bit_set(val, 7) {
+                    self.trigger();
+                }
+ 
+                self.nr34 = val;
+            },
+
+            WAVE_RAM_START..=WAVE_RAM_END => {
+                self.wave_ram[(addr-WAVE_RAM_START) as usize] = val;
+            },
+            _ => panic!()
+        }
     }
 }

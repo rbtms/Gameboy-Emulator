@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+
 use crate::interruptManager::InterruptManager;
 use crate::consts::*;
 
@@ -144,19 +145,27 @@ impl Joypad {
         if is_direction { self.direction = 0b11111111; }
         if is_action { self.action = 0b11111111; }
     }
+}
 
-    pub fn read(&mut self) -> u8 {
-        let is_direction = (self.mask>>4)&1 == 0;
-        let is_action    = (self.mask>>5)&1 == 0;
+impl ComponentWithMemory for Joypad {
+    fn read(&self, addr: u16) -> u8 {
+        if addr == ADDR_P1 {
+            let is_direction = (self.mask>>4)&1 == 0;
+            let is_action    = (self.mask>>5)&1 == 0;
 
-        if is_direction && is_action { return self.action & self.direction; }
-        else if is_direction { return self.direction; }
-        else if is_action { return self.action; }
+            if is_direction && is_action { return self.action & self.direction; }
+            else if is_direction { return self.direction; }
+            else if is_action { return self.action; }
 
-        return 0b11111111;
+            return 0b11111111;
+        } else {
+            panic!("Invalid register address: {}", addr)
+        }
     }
 
-    pub fn write(&mut self, val :u8) {
-        self.mask = val;
+    fn write(&mut self, addr: u16, val :u8) {
+        if addr == ADDR_P1 {
+            self.mask = val;
+        }
     }
 }

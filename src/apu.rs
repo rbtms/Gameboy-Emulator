@@ -10,7 +10,7 @@ mod audio;
 
 // TODO: Turning the APU off resets the duty counters
 
-pub trait Channel {
+pub trait Channel: ComponentWithMemory {
     fn is_enabled(&self) -> bool;
     fn inc_length(&mut self);
     fn turn_off(&mut self);
@@ -56,59 +56,6 @@ impl APU {
         self.ch4.init();
 
         self.audio.resume();
-    }
-
-    pub fn read(&self, addr :u16) -> u8 {
-        return match addr {
-            ADDR_NR10..=ADDR_NR14 => self.ch1.read(addr),
-            ADDR_NR21..=ADDR_NR24 => self.ch2.read(addr),
-            ADDR_NR30..=ADDR_NR34 => self.ch3.read(addr),
-            ADDR_NR41..=ADDR_NR44 => self.ch4.read(addr),
-            WAVE_RAM_START..=WAVE_RAM_END => self.ch3.read(addr),
-
-            ADDR_NR50 => self.nr50,
-            ADDR_NR51 => self.nr51,
-            ADDR_NR52 => {
-                return ((self.is_apu_enabled() as u8) << 7)
-                     | ((self.ch4.is_enabled() as u8) << 3)
-                     | ((self.ch3.is_enabled() as u8) << 2)
-                     | ((self.ch2.is_enabled() as u8) << 1)
-                     | (self.ch1.is_enabled() as u8)
-                     | 0x70;
-            }
-
-            _ => panic!("read(): Invalid address: {:04X}", addr)
-        }
-    }
-
-    pub fn write(&mut self, addr :u16, val :u8) {
-        if self.is_apu_enabled() {
-            // If the APU is enabled, allow write of all registers
-            match addr {
-                ADDR_NR10..=ADDR_NR14 => self.ch1.write(addr, val),
-                ADDR_NR21..=ADDR_NR24 => self.ch2.write(addr, val),
-                ADDR_NR30..=ADDR_NR34 => self.ch3.write(addr, val),
-                ADDR_NR41..=ADDR_NR44 => self.ch4.write(addr, val),
-                WAVE_RAM_START..=WAVE_RAM_END => self.ch3.write(addr, val),
-
-                ADDR_NR50 => self.nr50 = val,
-                ADDR_NR51 => self.nr51 = val,
-                ADDR_NR52 => self.write_nr52(val),
-                
-                _ => panic!("write(): Invalid address: {:04X}", addr)
-            }
-        } else {
-            // Otherwise only allow R/W of wave ram and NR52
-            match addr {
-                /*ADDR_NR11 => self.ch1.write(addr, val),
-                ADDR_NR21 => self.ch2.write(addr, val),
-                ADDR_NR31 => self.ch3.write(addr, val),
-                ADDR_NR41 => self.ch4.write(addr, val),*/
-                ADDR_NR52 => self.write_nr52(val),
-                WAVE_RAM_START..=WAVE_RAM_END => self.ch3.write(addr, val),
-                _ => {}
-            }
-        }
     }
 
     // Master control
@@ -230,6 +177,61 @@ impl APU {
             self.sample_counter = 0;
         } else {
             self.sample_counter += 1;
+        }
+    }
+}
+
+impl ComponentWithMemory for APU {
+    fn read(&self, addr :u16) -> u8 {
+        return match addr {
+            ADDR_NR10..=ADDR_NR14 => self.ch1.read(addr),
+            ADDR_NR21..=ADDR_NR24 => self.ch2.read(addr),
+            ADDR_NR30..=ADDR_NR34 => self.ch3.read(addr),
+            ADDR_NR41..=ADDR_NR44 => self.ch4.read(addr),
+            WAVE_RAM_START..=WAVE_RAM_END => self.ch3.read(addr),
+
+            ADDR_NR50 => self.nr50,
+            ADDR_NR51 => self.nr51,
+            ADDR_NR52 => {
+                return ((self.is_apu_enabled() as u8) << 7)
+                     | ((self.ch4.is_enabled() as u8) << 3)
+                     | ((self.ch3.is_enabled() as u8) << 2)
+                     | ((self.ch2.is_enabled() as u8) << 1)
+                     | (self.ch1.is_enabled() as u8)
+                     | 0x70;
+            }
+
+            _ => panic!("read(): Invalid address: {:04X}", addr)
+        }
+    }
+
+    fn write(&mut self, addr :u16, val :u8) {
+        if self.is_apu_enabled() {
+            // If the APU is enabled, allow write of all registers
+            match addr {
+                ADDR_NR10..=ADDR_NR14 => self.ch1.write(addr, val),
+                ADDR_NR21..=ADDR_NR24 => self.ch2.write(addr, val),
+                ADDR_NR30..=ADDR_NR34 => self.ch3.write(addr, val),
+                ADDR_NR41..=ADDR_NR44 => self.ch4.write(addr, val),
+                WAVE_RAM_START..=WAVE_RAM_END => self.ch3.write(addr, val),
+
+                ADDR_NR50 => self.nr50 = val,
+                ADDR_NR51 => self.nr51 = val,
+                ADDR_NR52 => self.write_nr52(val),
+                
+                _ => panic!("write(): Invalid address: {:04X}", addr)
+            }
+        } else {
+            // Otherwise only allow R/W of wave ram and NR52
+            match addr {
+                /*ADDR_NR11 => self.ch1.write(addr, val),
+                ADDR_NR21 => self.ch2.write(addr, val),
+                ADDR_NR31 => self.ch3.write(addr, val),
+                ADDR_NR41 => self.ch4.write(addr, val),*/
+                ADDR_NR52 => self.write_nr52(val),
+                WAVE_RAM_START..=WAVE_RAM_END => self.ch3.write(addr, val),
+                _ => {}
+            }
         }
     }
 }

@@ -107,7 +107,7 @@ impl Bus {
                     => self.apu.read(addr),
                 // Joypad
                 ADDR_P1
-                    => self.joypad.borrow_mut().read(),
+                    => self.joypad.borrow_mut().read(addr),
                 // Timer
                 ADDR_DIV | ADDR_TIMA | ADDR_TMA | ADDR_TAC
                     => self.timer.read(addr),
@@ -173,7 +173,7 @@ impl Bus {
                     => self.apu.write(addr, val),
                 // Joypad
                 ADDR_P1 =>
-                    self.joypad.borrow_mut().write(val),
+                    self.joypad.borrow_mut().write(addr, val),
                 // Timer
                 ADDR_DIV | ADDR_TIMA | ADDR_TMA | ADDR_TAC
                     => self.timer.write(addr, val),

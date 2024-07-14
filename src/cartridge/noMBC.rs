@@ -58,32 +58,6 @@ impl Cartridge for NoMBC {
         self.print_rom_data();
     }
 
-    fn read(&self, addr :u16) -> u8 {
-        return match addr {
-            BANK0_START..=BANK0_END => self.rom[addr as usize],
-            BANK1_START..=BANK1_END => self.rom[addr as usize],
-            0xA000..=0xBFFF => if self.cartridge_type.has_ram()
-                            && self.ram_size > 0 {
-                self.ext_ram[self.map_ext_ram_addr(addr)]
-            } else {
-                0xFF
-            },
-            _ => panic!("read(): Invalid address: {:04X}", addr)
-        }
-    }
-
-    fn write(&mut self, addr :u16, val :u8) {
-        match addr {
-            0xA000..=0xBFFF => if self.cartridge_type.has_ram()
-                            && self.ram_size > 0 {
-                let _addr = self.map_ext_ram_addr(addr);
-                self.ext_ram[_addr] = val;
-            },
-            // TODO: Log
-            _ => {}
-        }
-    }
-
     fn load_ram(&mut self) {
         if self.cartridge_type.has_ram() && self.ram_size > 0 {
             let path = format!("{}/{}", SAVE_PATH, self.file);
@@ -129,5 +103,33 @@ impl Cartridge for NoMBC {
         println!();
         println!("ROM loaded");
         println!("--------------------------------------\n");
+    }
+}
+
+impl ComponentWithMemory for NoMBC {
+    fn read(&self, addr :u16) -> u8 {
+        return match addr {
+            BANK0_START..=BANK0_END => self.rom[addr as usize],
+            BANK1_START..=BANK1_END => self.rom[addr as usize],
+            0xA000..=0xBFFF => if self.cartridge_type.has_ram()
+                            && self.ram_size > 0 {
+                self.ext_ram[self.map_ext_ram_addr(addr)]
+            } else {
+                0xFF
+            },
+            _ => panic!("read(): Invalid address: {:04X}", addr)
+        }
+    }
+
+    fn write(&mut self, addr :u16, val :u8) {
+        match addr {
+            0xA000..=0xBFFF => if self.cartridge_type.has_ram()
+                            && self.ram_size > 0 {
+                let _addr = self.map_ext_ram_addr(addr);
+                self.ext_ram[_addr] = val;
+            },
+            // TODO: Log
+            _ => {}
+        }
     }
 }

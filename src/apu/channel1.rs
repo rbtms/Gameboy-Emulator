@@ -34,83 +34,6 @@ impl Channel1 {
 
     pub fn init(&mut self) {}
 
-    pub fn read(&self, addr :u16) -> u8 {
-        return match addr {
-            ADDR_NR10 => self.nr10 | 0x80,
-            ADDR_NR11 => self.nr11 | 0x3F,
-            ADDR_NR12 => self.nr12,
-            ADDR_NR13 => 0xFF, // Write only
-            ADDR_NR14 => self.nr14 | 0xBF,
-            _ => panic!()
-        }
-    }
-
-    /*
-        TODO
-        
-        The channel is turned off when:
-
-        The channel’s length timer is enabled in NRx4 and expires, or
-        For CH1 only: when the period sweep overflows, or
-        The channel’s DAC is turned off. The envelope reaching a volume of 0 does NOT turn the channel off!
-     */
-    pub fn write(&mut self, addr :u16, val :u8) {
-        match addr {
-            /*
-                Sweep
-
-                b7   Unused
-                b6-4 Pace
-                b3   Direction
-                b2-0 Individual step   
-             */
-            ADDR_NR10 => self.nr10 = val,
-            /*
-                Length timer and duty cycle
-
-                b7-6 Wave duty (read/write)
-                b5-0 Initial length timer (write only)
-             */
-            ADDR_NR11 => self.nr11 = val,
-            /*
-                Volume & envelope
-
-                b7-4 Initial volume
-                b3   Env dir
-                b2-0 Sweep pace. A setting of 0 disables the envelope
-             */
-            ADDR_NR12 => {
-                // Turn DAC off if bits 7-3 are 0
-                if (val & 0xF0) == 0 {
-                    self.is_enabled = false; // TODO: Check
-                }
-
-                self.nr12 = val;
-            }
-            // Period low
-            ADDR_NR13 => self.nr13 = val,
-            /*                
-                Period high and control
-
-                * If the channel’s DAC is off, then the write to NRx4 will be ineffective and won’t turn the channel on.
-                
-                b7   Trigger (Write-only)
-                b6   Length enable (Read/Write)
-                b5-3 Unused
-                b2-0 Period, upper 3 bits (Write-only)
-             */
-            ADDR_NR14 => {
-                // Trigger the channel
-                if self.is_bit_set(val, 7) && self.is_dac_enabled() {
-                    self.trigger();
-                }
-
-                self.nr14 = val;
-            }
-            _ => panic!()
-        }
-    }
-
     // Triggers the channel
     fn trigger(&mut self) {
         self.is_enabled = true;
@@ -295,6 +218,85 @@ impl Channel for Channel1 {
              self.volume * self.duty_cicle()
         } else {
             0
+        }
+    }
+}
+
+impl ComponentWithMemory for Channel1 {
+    fn read(&self, addr :u16) -> u8 {
+        return match addr {
+            ADDR_NR10 => self.nr10 | 0x80,
+            ADDR_NR11 => self.nr11 | 0x3F,
+            ADDR_NR12 => self.nr12,
+            ADDR_NR13 => 0xFF, // Write only
+            ADDR_NR14 => self.nr14 | 0xBF,
+            _ => panic!()
+        }
+    }
+
+    /*
+        TODO
+        
+        The channel is turned off when:
+
+        The channel’s length timer is enabled in NRx4 and expires, or
+        For CH1 only: when the period sweep overflows, or
+        The channel’s DAC is turned off. The envelope reaching a volume of 0 does NOT turn the channel off!
+     */
+    fn write(&mut self, addr :u16, val :u8) {
+        match addr {
+            /*
+                Sweep
+
+                b7   Unused
+                b6-4 Pace
+                b3   Direction
+                b2-0 Individual step   
+             */
+            ADDR_NR10 => self.nr10 = val,
+            /*
+                Length timer and duty cycle
+
+                b7-6 Wave duty (read/write)
+                b5-0 Initial length timer (write only)
+             */
+            ADDR_NR11 => self.nr11 = val,
+            /*
+                Volume & envelope
+
+                b7-4 Initial volume
+                b3   Env dir
+                b2-0 Sweep pace. A setting of 0 disables the envelope
+             */
+            ADDR_NR12 => {
+                // Turn DAC off if bits 7-3 are 0
+                if (val & 0xF0) == 0 {
+                    self.is_enabled = false; // TODO: Check
+                }
+
+                self.nr12 = val;
+            }
+            // Period low
+            ADDR_NR13 => self.nr13 = val,
+            /*                
+                Period high and control
+
+                * If the channel’s DAC is off, then the write to NRx4 will be ineffective and won’t turn the channel on.
+                
+                b7   Trigger (Write-only)
+                b6   Length enable (Read/Write)
+                b5-3 Unused
+                b2-0 Period, upper 3 bits (Write-only)
+             */
+            ADDR_NR14 => {
+                // Trigger the channel
+                if self.is_bit_set(val, 7) && self.is_dac_enabled() {
+                    self.trigger();
+                }
+
+                self.nr14 = val;
+            }
+            _ => panic!()
         }
     }
 }

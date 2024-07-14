@@ -1,4 +1,4 @@
-use crate::cartridge::Cartridge;
+use crate::{cartridge::Cartridge, consts::ComponentWithMemory};
 
 /*
  Type of cartridge which is just an array for tests
@@ -26,14 +26,6 @@ impl Cartridge for MBCTest {
 
     fn is_test_cart(&self) -> bool { return true; }
 
-    fn read(&self, addr :u16) -> u8 {
-        return self.rom[addr as usize];
-    }
-
-    fn write(&mut self, addr :u16, val :u8) {
-        self.rom[addr as usize] = val;
-    }
-
     fn load_ram(&mut self) {}
     fn save_ram(&self) {}
 
@@ -44,4 +36,15 @@ impl Cartridge for MBCTest {
         println!();
         println!("--------------------------------------\n");
     }
+}
+
+impl ComponentWithMemory for MBCTest {
+    fn read(&self, addr :u16) -> u8 {
+        return self.rom[addr as usize];
+    }
+
+    fn write(&mut self, addr :u16, val :u8) {
+        self.rom[addr as usize] = val;
+    }
+
 }

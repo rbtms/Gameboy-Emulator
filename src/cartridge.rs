@@ -1,4 +1,5 @@
 use crate::consts::CART_HEADER_CART_TYPE;
+use crate::consts::ComponentWithMemory;
 
 mod noMBC;
 mod mbc1;
@@ -93,10 +94,9 @@ impl CartridgeType {
     }
 }
 
-pub trait Cartridge {
+pub trait Cartridge: ComponentWithMemory {
     fn init(&mut self);
-    fn read(&self, addr :u16) -> u8;
-    fn write(&mut self, addr :u16, val :u8);
+
     fn load_ram(&mut self);
     fn save_ram(&self);
     fn print_rom_data(&self);

@@ -87,9 +87,8 @@ impl GBEmulator {
             self.run_frame();
         }
 
-        // TODO: Reenable every 60 frames
-        // TODO: Why every frame????
-        //self.bus.borrow().save_ram();
+        // Save RAM on quit
+        self.bus.borrow().save_ram();
     }
 
     pub fn run_frame(&mut self) {

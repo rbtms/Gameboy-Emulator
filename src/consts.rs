@@ -30,6 +30,11 @@ pub enum Interrupt {
     Joypad 
 }
 
+pub trait ComponentWithMemory {
+    fn read(&self, addr: u16) -> u8;
+    fn write(&mut self, addr: u16, val: u8);
+}
+
 pub const REG_N :u8 = 8;
 
 pub const CART_HEADER_TITLE_START         :usize = 0x134;

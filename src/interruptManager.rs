@@ -15,23 +15,6 @@ impl InterruptManager {
         }
     }
 
-    pub fn read(&self, addr :u16) -> u8 {
-        return match addr {
-            ADDR_IE => self.IE, // A mask of 0b11100000 makes some tests fail
-            // Test 2 of blargg fails with this mask
-            ADDR_IF => self.IF | 0b11100000, // bits 5-7 are always 1
-            _ => panic!("read(): Invalid address: {:04X}", addr)
-        }
-    }
-
-    pub fn write(&mut self, addr :u16, val :u8) {
-        match addr {
-            ADDR_IE => self.IE = val,
-            ADDR_IF => self.IF = val,
-            _ => panic!("write(): Invalid address: {:04X}", addr)
-        }
-    }
-
     // TODO: Remove. For debugging.
     pub fn get_ime(&self) -> bool {
         return self.IME;
@@ -89,5 +72,24 @@ impl InterruptManager {
 
     pub fn has_interrupts(&self) -> bool {
         return self.IME && ((self.IF & self.IE & 0x1f) != 0); // 0x1f to ignore the first 3 bits
+    }
+}
+
+impl ComponentWithMemory for InterruptManager {
+    fn read(&self, addr :u16) -> u8 {
+        return match addr {
+            ADDR_IE => self.IE, // A mask of 0b11100000 makes some tests fail
+            // Test 2 of blargg fails with this mask
+            ADDR_IF => self.IF | 0b11100000, // bits 5-7 are always 1
+            _ => panic!("read(): Invalid address: {:04X}", addr)
+        }
+    }
+
+    fn write(&mut self, addr :u16, val :u8) {
+        match addr {
+            ADDR_IE => self.IE = val,
+            ADDR_IF => self.IF = val,
+            _ => panic!("write(): Invalid address: {:04X}", addr)
+        }
     }
 }
