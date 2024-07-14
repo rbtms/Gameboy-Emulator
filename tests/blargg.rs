@@ -28,7 +28,7 @@ mod tests {
         let file = file.split("/").into_iter().last().unwrap();
         let hash = load_md5(&file);
 
-        let mut gbemu = GBEmulator::new(&path);
+        let mut gbemu = GBEmulator::new(&path, 2);
         gbemu.init();
 
         let screen = gbemu.get_screen();

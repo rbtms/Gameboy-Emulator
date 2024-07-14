@@ -6,19 +6,6 @@ use sdl2::pixels::PixelFormatEnum;
 use crate::consts::*;
 use crate::ppu::{Pixel, Palette::*};
 
-const DEFAULT_SCREEN_MULT :u16  = 2;
-
-fn parse_arg_mult() -> u16 {
-    let args :Vec<String> = std::env::args().collect();
-
-    for arg in args.iter() {
-        if arg.contains("--mult") {
-            return arg.split_once('=').unwrap().1.parse().unwrap();
-        }
-    }
-
-    return DEFAULT_SCREEN_MULT;
-}
 
 pub struct Screen {
     canvas :sdl2::render::Canvas<sdl2::video::Window>,
@@ -28,9 +15,8 @@ pub struct Screen {
 }
 
 impl Screen {
-    pub fn new(sdl_context :&sdl2::Sdl, rom_path :String) -> Screen {
+    pub fn new(sdl_context :&sdl2::Sdl, rom_path :String, screen_mult: u8) -> Screen {
         let video_subsystem = sdl_context.video().unwrap();
-        let screen_mult = parse_arg_mult();
         let window = video_subsystem.window(
             &rom_path,
             screen_mult as u32 *SCREEN_WIDTH as u32,
@@ -41,7 +27,7 @@ impl Screen {
         return Screen {
             canvas,
             rom_path,
-            screen_mult,
+            screen_mult: screen_mult as u16,
             rects: vec![vec![], vec![], vec![], vec![]]
         }
     }

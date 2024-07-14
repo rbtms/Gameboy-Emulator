@@ -186,7 +186,7 @@ mod tests {
     fn test_ops() {
         // IMPORTANT: To pass this test, there is need to have unbounded access to RAM,
         // that is, to use a mock RAM in the Bus instead of the usual methods.
-        let mut gbemu = GBEmulator::new(TEST_ROM_PATH);
+        let mut gbemu = GBEmulator::new(TEST_ROM_PATH, 2);
 
         // Omitting 0x10: STOP, 0x76: HALT, 0xF3: DI, 0xFB: EI
         let tests = [
@@ -216,7 +216,7 @@ mod tests {
 
     #[test]
     fn test_ops_cb() {
-        let mut gbemu = GBEmulator::new(TEST_ROM_PATH);
+        let mut gbemu = GBEmulator::new(TEST_ROM_PATH, 1);
         
         println!("Testing cb");
         run_test(format!("{}/cb.json", JSON_PATH), &mut gbemu);

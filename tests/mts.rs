@@ -37,7 +37,7 @@ mod tests {
     pub fn test_rom(file :&str) {
         let path = format!("{}/{}", ROM_FOLDER, file);
 
-        let mut gbemu = GBEmulator::new(&path);
+        let mut gbemu = GBEmulator::new(&path, 2);
         gbemu.init();
 
         let bus = gbemu.get_bus();

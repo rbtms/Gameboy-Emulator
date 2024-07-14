@@ -13,7 +13,7 @@ mod tests {
         let path = format!("{}/{}", ROMS_FOLDER, file);
         println!("path: {}", path);
 
-        let mut gbemu = GBEmulator::new(&path);
+        let mut gbemu = GBEmulator::new(&path, 2);
         gbemu.init();
 
         let screen = gbemu.get_screen();

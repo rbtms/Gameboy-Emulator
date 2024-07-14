@@ -14,6 +14,15 @@ pub const REG_F :REGINDEX = 6;
 pub const REG_H :REGINDEX = 7;
 pub const REG_L :REGINDEX = 1;
 
+#[derive(Debug)]
+pub struct Config {
+    pub is_debug :bool,
+    pub has_breakpoint :bool,
+    pub breakpoint_addr :u16,
+    pub rom_path :String,
+    pub screen_mult: u8
+}
+
 pub enum JmpCond {
     NZ,
     Z,

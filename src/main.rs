@@ -1,14 +1,7 @@
 use std::env;
-
+use gb::consts::Config;
 use gb::debugger::Debugger;
 
-#[derive(Debug)]
-struct Config {
-    is_debug :bool,
-    has_breakpoint :bool,
-    breakpoint_addr :u16,
-    rom_path :String
-}
 
 fn parse_args() -> Config {
     let mut args :Vec<String> = env::args().collect();
@@ -22,8 +15,12 @@ fn parse_args() -> Config {
 
     // --mult, screen size multiplier. Used by screen, not here
     let is_mult = args.contains(&"--mult".to_string());
+    let mut screen_mult = 2;
+    println!("MULT: {}", is_mult);
     if is_mult {
         let index = args.iter().position(|s| (*s).contains("--mult")).unwrap();
+        args.remove(index);
+        screen_mult = args[index].parse().unwrap();
         args.remove(index);
     }
 
@@ -51,15 +48,17 @@ fn parse_args() -> Config {
         rom_path,
         is_debug,
         has_breakpoint,
-        breakpoint_addr
+        breakpoint_addr,
+        screen_mult
     };
 }
 
 fn main() {
     let config = parse_args();
-
+    
     let mut gbemu = gb::gbemulator::GBEmulator::new(
         &config.rom_path,
+        config.screen_mult
     );
 
     if config.is_debug {

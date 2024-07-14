@@ -15,7 +15,7 @@ mod tests {
     fn run_benchmark(path :&str) -> BenchmarkResult {            
         let mut cycle_n = 0;
 
-        let mut gbemu = GBEmulator::new(&path);
+        let mut gbemu = GBEmulator::new(&path, 2);
 
         gbemu.init();
         let bus = gbemu.get_bus();

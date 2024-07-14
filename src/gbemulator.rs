@@ -37,16 +37,29 @@ pub struct GBEmulator {
 }
 
 impl GBEmulator {
-    pub fn new(rom_path :&str) -> GBEmulator {
+    pub fn new(rom_path: &str, screen_mult: u8) -> GBEmulator {
         let sdl_context = sdl2::init().unwrap();
-        let screen = Rc::new(RefCell::new(Screen::new(&sdl_context, rom_path.to_string())));
+
+        let screen = Rc::new(RefCell::new(
+            Screen::new(&sdl_context, rom_path.to_string(), screen_mult)
+        ));
+
         let audio = sdl_context.audio().unwrap();
         let apu   = APU::new(audio);
 
-        let int: Rc<RefCell<InterruptManager>> = Rc::new(RefCell::new(InterruptManager::new()));
+        let int: Rc<RefCell<InterruptManager>> = Rc::new(RefCell::new(
+            InterruptManager::new()
+        ));
+
         let ppu = PPU::new(screen.clone(), int.clone());
-        let joypad = Rc::new(RefCell::new(Joypad::new(int.clone())));
-        let bus  = Rc::new(RefCell::new(Bus::new(ppu, apu, int.clone(), joypad.clone(), rom_path)));
+
+        let joypad = Rc::new(RefCell::new(
+            Joypad::new(int.clone())
+        ));
+
+        let bus  = Rc::new(RefCell::new(
+            Bus::new(ppu, apu, int.clone(), joypad.clone(), rom_path)
+        ));
 
         return GBEmulator {
 //            path            : rom_path.to_string(),
