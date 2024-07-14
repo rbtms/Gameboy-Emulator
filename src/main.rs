@@ -34,7 +34,6 @@ fn parse_args() -> Config {
         args.remove(index);
     }
 
-
     // rom path
     let rom_path = if args.len() > 1 {
         args[1].clone()
