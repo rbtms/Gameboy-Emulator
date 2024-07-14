@@ -73,7 +73,61 @@ impl Bus {
         }
     }
 
-    pub fn read(&self, addr :u16) -> u8 {
+    fn write_oam_dma(&mut self, addr :u16, val :u8) {
+        match addr {
+            HRAM_START..=HRAM_END => self.ram.write(addr, val),
+            ADDR_DMA => self.ram.write(addr, val),
+            _ => {}
+        }
+    }
+
+    pub fn tick(&mut self) {
+        self.ppu.tick();    // TODO: Possible delay of 1 cycle on OAM DMA
+        self.timer.tick();
+        self.apu.tick(self.read(ADDR_DIV));
+
+        // Wait for 5 cycles (actual cycle + 1 M-cycle to start OAM-DMA
+        if self.schedule_oam_dma {
+            self.wait_oam_dma -= 1;
+
+            if self.wait_oam_dma == 0 {
+                self.schedule_oam_dma = false;
+                self.is_oam_dma = true;
+                self.ppu.set_oam_dma(true);
+                self.dma_until_next_m_cycle = 1; // Wait until next M-cycle
+            }
+        } else if self.is_oam_dma {
+            self.dma_until_next_m_cycle -= 1;
+
+            if self.dma_until_next_m_cycle == 0 {
+                //println!("dma move");
+
+                self.is_oam_dma = false; // Deactivate momentarily to be able to read
+                let val = self.read(self.dma_src_addr);
+                self.is_oam_dma = true; // Enable it again so that the cpu can only access HRAM
+
+                self.ppu.write_oam_dma(self.dma_dst_addr, val);
+                self.dma_src_addr += 1;
+                self.dma_dst_addr += 1;
+                self.dma_until_next_m_cycle = 4;
+
+                // The last OAM address is 
+                if self.dma_dst_addr == OAM_END+1 {
+                    //println!("dma end");
+                    self.is_oam_dma = false;
+                    self.ppu.set_oam_dma(false);
+                }
+            }
+        }
+    }
+
+    pub fn save_ram(&self) {
+        self.cart.save_ram();
+    }
+}
+
+impl ComponentWithMemory for Bus {
+    fn read(&self, addr :u16) -> u8 {
         if self.cart.is_test_cart() {
             return self.cart.read(addr); // For tests. Remove.
         }
@@ -120,15 +174,7 @@ impl Bus {
         }
     }
 
-    fn write_oam_dma(&mut self, addr :u16, val :u8) {
-        match addr {
-            HRAM_START..=HRAM_END => self.ram.write(addr, val),
-            ADDR_DMA => self.ram.write(addr, val),
-            _ => {}
-        }
-    }
-
-    pub fn write(&mut self, addr :u16, val :u8) {
+    fn write(&mut self, addr :u16, val :u8) {
         if self.cart.is_test_cart() {
             return self.cart.write(addr, val); // For tests. Remove.
         }
@@ -186,49 +232,5 @@ impl Bus {
                 }
             }
         }
-    }
-
-    pub fn tick(&mut self) {
-        self.ppu.tick();    // TODO: Possible delay of 1 cycle on OAM DMA
-        self.timer.tick();
-        self.apu.tick(self.read(ADDR_DIV));
-
-        // Wait for 5 cycles (actual cycle + 1 M-cycle to start OAM-DMA
-        if self.schedule_oam_dma {
-            self.wait_oam_dma -= 1;
-
-            if self.wait_oam_dma == 0 {
-                self.schedule_oam_dma = false;
-                self.is_oam_dma = true;
-                self.ppu.set_oam_dma(true);
-                self.dma_until_next_m_cycle = 1; // Wait until next M-cycle
-            }
-        } else if self.is_oam_dma {
-            self.dma_until_next_m_cycle -= 1;
-
-            if self.dma_until_next_m_cycle == 0 {
-                //println!("dma move");
-
-                self.is_oam_dma = false; // Deactivate momentarily to be able to read
-                let val = self.read(self.dma_src_addr);
-                self.is_oam_dma = true; // Enable it again so that the cpu can only access HRAM
-
-                self.ppu.write_oam_dma(self.dma_dst_addr, val);
-                self.dma_src_addr += 1;
-                self.dma_dst_addr += 1;
-                self.dma_until_next_m_cycle = 4;
-
-                // The last OAM address is 
-                if self.dma_dst_addr == OAM_END+1 {
-                    //println!("dma end");
-                    self.is_oam_dma = false;
-                    self.ppu.set_oam_dma(false);
-                }
-            }
-        }
-    }
-
-    pub fn save_ram(&self) {
-        self.cart.save_ram();
     }
 }
